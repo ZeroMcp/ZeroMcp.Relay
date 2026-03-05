@@ -1,0 +1,51 @@
+# Progress Log
+
+## 2026-03-05
+
+- Initialized solution and baseline projects (`src`, `tests`).
+- Added core dependency packages required by the spec.
+- Created source module folders (`Cli`, `Config`, `Ingestion`, `Relay`, `Server`, `Ui`).
+- Added sample directories (`samples/BasicRelay`, `samples/MultiApiRelay`).
+- Converted main project toward `dotnet tool` packaging (`PackAsTool`, `ToolCommandName=mcprelay`, multi-target).
+- Added initial CLI command placeholders in `Program.cs`.
+- Expanded `README.md` with layout and current bootstrap status.
+- Added per-project/sample README files to keep documentation coverage consistent.
+- Adjusted bootstrap after first build failure:
+  - Replaced experimental `System.CommandLine` usage with a stable manual command dispatcher placeholder.
+  - Removed `Microsoft.AspNetCore.OpenApi` package and switched to `Microsoft.AspNetCore.App` framework reference for multi-target compatibility.
+- Phase 2 started:
+  - Added config domain models (`RelayConfig`, `ApiConfig`, `AuthConfig`).
+  - Added validation result types and severity model.
+  - Added secret masking and environment secret resolution services.
+  - Added include/exclude glob matcher.
+  - Added `RelayConfigService` with config path resolution, load/save, schema defaults, and validation including prefix uniqueness and auth checks.
+- Phase 3 started:
+  - Added OpenAPI load result model and source loader for HTTP(S) and `file://` specs.
+  - Added in-memory OpenAPI cache by API name.
+  - Added tool generation models.
+  - Added OpenAPI-to-tool generator with operation name fallback, description fallback, include/exclude filtering, flattened input schema generation, and schema `$ref` resolution warnings.
+- Added initial Phase 2/3 tests:
+  - Config glob include/exclude behavior.
+  - Config validation for duplicate prefixes.
+  - OpenAPI tool generation fallback naming and schema flattening behavior.
+- Updated ingestion test expectation to match normalized snake_case fallback naming behavior (`customer_id`).
+- Validation run:
+  - `dotnet build "ZeroMcp.Relay.slnx" -v detailed` succeeded.
+  - `dotnet test "ZeroMcp.Relay.slnx" -v normal` succeeded (4/4 tests passing).
+- Phase 2 and Phase 3 marked complete in the implementation plan.
+- Phase 4 started:
+  - Added relay dispatch result model.
+  - Added auth application for bearer/API key/basic/query auth.
+  - Added outbound dispatch pipeline for URL construction, path/query/header/body mapping, auth/static header application, and response mapping.
+- Phase 5 started:
+  - Added runtime state/registry for loaded APIs and tool bindings.
+  - Added MCP router handling `initialize`, `tools/list`, and `tools/call`.
+  - Added stdio transport loop (newline-delimited JSON-RPC).
+  - Added HTTP transport with `/mcp` (GET+POST), `/mcp/tools`, and `/health`.
+  - Updated `run` command to parse options and launch stdio or HTTP mode.
+- Added Phase 5 parser test for `run` options parsing (`--host`, `--port`, `--stdio`, `--enable-ui`, `--config`, `--lazy`).
+- Build/test note: parallel build+test initially caused a transient PDB file lock; sequential test run succeeded.
+- Validation run:
+  - `dotnet build "ZeroMcp.Relay.slnx" -v detailed` succeeded.
+  - `dotnet test "ZeroMcp.Relay.slnx" -v normal` succeeded (5/5 tests passing).
+- Phase 4 and Phase 5 marked complete in the implementation plan.

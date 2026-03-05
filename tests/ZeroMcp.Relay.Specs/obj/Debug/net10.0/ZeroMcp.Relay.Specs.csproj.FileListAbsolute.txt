@@ -1,0 +1,12 @@
+C:\Users\Matt.Anderson\McpRelay\ZeroMcp.Relay\tests\ZeroMcp.Relay.Specs\bin\Debug\net10.0\ZeroMcp.Relay.Specs.deps.json
+C:\Users\Matt.Anderson\McpRelay\ZeroMcp.Relay\tests\ZeroMcp.Relay.Specs\bin\Debug\net10.0\ZeroMcp.Relay.Specs.dll
+C:\Users\Matt.Anderson\McpRelay\ZeroMcp.Relay\tests\ZeroMcp.Relay.Specs\bin\Debug\net10.0\ZeroMcp.Relay.Specs.pdb
+C:\Users\Matt.Anderson\McpRelay\ZeroMcp.Relay\tests\ZeroMcp.Relay.Specs\obj\Debug\net10.0\ZeroMcp.Relay.Specs.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Matt.Anderson\McpRelay\ZeroMcp.Relay\tests\ZeroMcp.Relay.Specs\obj\Debug\net10.0\ZeroMcp.Relay.Specs.AssemblyInfoInputs.cache
+C:\Users\Matt.Anderson\McpRelay\ZeroMcp.Relay\tests\ZeroMcp.Relay.Specs\obj\Debug\net10.0\ZeroMcp.Relay.Specs.AssemblyInfo.cs
+C:\Users\Matt.Anderson\McpRelay\ZeroMcp.Relay\tests\ZeroMcp.Relay.Specs\obj\Debug\net10.0\ZeroMcp.Relay.Specs.csproj.CoreCompileInputs.cache
+C:\Users\Matt.Anderson\McpRelay\ZeroMcp.Relay\tests\ZeroMcp.Relay.Specs\obj\Debug\net10.0\ZeroMcp.Relay.Specs.sourcelink.json
+C:\Users\Matt.Anderson\McpRelay\ZeroMcp.Relay\tests\ZeroMcp.Relay.Specs\obj\Debug\net10.0\ZeroMcp.Relay.Specs.dll
+C:\Users\Matt.Anderson\McpRelay\ZeroMcp.Relay\tests\ZeroMcp.Relay.Specs\obj\Debug\net10.0\refint\ZeroMcp.Relay.Specs.dll
+C:\Users\Matt.Anderson\McpRelay\ZeroMcp.Relay\tests\ZeroMcp.Relay.Specs\obj\Debug\net10.0\ZeroMcp.Relay.Specs.pdb
+C:\Users\Matt.Anderson\McpRelay\ZeroMcp.Relay\tests\ZeroMcp.Relay.Specs\obj\Debug\net10.0\ref\ZeroMcp.Relay.Specs.dll
