@@ -12,6 +12,8 @@ public sealed class RunOptions
 
     public string? ConfigPath { get; set; }
 
+    public string? EnvPath { get; set; }
+
     public bool ValidateOnStart { get; set; } = true;
 
     public bool Lazy { get; set; }
@@ -41,6 +43,9 @@ public static class RunOptionsParser
                     break;
                 case "--config":
                     options.ConfigPath = ReadValue(args, ref i, "--config");
+                    break;
+                case "--env":
+                    options.EnvPath = ReadValue(args, ref i, "--env");
                     break;
                 case "--lazy":
                     options.Lazy = true;

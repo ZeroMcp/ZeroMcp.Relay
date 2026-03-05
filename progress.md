@@ -49,3 +49,21 @@
   - `dotnet build "ZeroMcp.Relay.slnx" -v detailed` succeeded.
   - `dotnet test "ZeroMcp.Relay.slnx" -v normal` succeeded (5/5 tests passing).
 - Phase 4 and Phase 5 marked complete in the implementation plan.
+- Phase 6 started:
+  - Added `CliCommandHost` with implemented command handlers for:
+    - `configure`: `init`, `add`, `remove`, `list`, `show`, `enable`, `disable`, `test`, `set-secret`
+    - `tools`: `list`, `inspect`, `count`
+    - `validate`: config + spec validation with `--strict` warning promotion
+  - Updated `Program.cs` to route `configure`, `tools`, and `validate` to real handlers.
+  - Added `.env` file loading support for `run --env`.
+- Phase 7 started:
+  - Added feature-gated UI route registration in HTTP server (`--enable-ui` only).
+  - Added UI endpoints for config view, API list/toggle/test, tool list/inspect/invoke.
+  - Added `/admin/reload` only when UI is enabled.
+- Added Phase 6/7 tests:
+  - Config masking behavior for secret display safety.
+  - `run` options parsing for `--env`.
+- Validation run:
+  - `dotnet build "ZeroMcp.Relay.slnx" -v detailed` succeeded.
+  - `dotnet test "ZeroMcp.Relay.slnx" -v normal` succeeded (7/7 tests passing).
+  - CLI smoke test: `configure init --config ./.tmp.relay.config.json` succeeded.

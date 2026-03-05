@@ -55,6 +55,9 @@ public sealed class RelayRuntime(
         await EnsureApisLoadedAsync(validateOnStart, failFast, cancellationToken);
     }
 
+    public Task ReloadAsync(string? configPath, bool validateOnStart, bool lazy, bool failFast, CancellationToken cancellationToken = default)
+        => InitializeAsync(configPath, validateOnStart, lazy, failFast, cancellationToken);
+
     public async Task EnsureApisLoadedAsync(bool validateOnStart, bool failFast, CancellationToken cancellationToken = default)
     {
         foreach (var api in _config.Apis.Where(a => a.Enabled))

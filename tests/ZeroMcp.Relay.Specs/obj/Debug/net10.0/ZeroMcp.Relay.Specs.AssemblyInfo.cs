@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ZeroMcp.Relay.Specs")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cc6d06ac7ebc13657a00b4bc04b069618050a626")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8b0a779b152422d02174b2023bb8143165a2c0af")]
 [assembly: System.Reflection.AssemblyProductAttribute("ZeroMcp.Relay.Specs")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ZeroMcp.Relay.Specs")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

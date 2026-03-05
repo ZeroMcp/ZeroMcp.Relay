@@ -1,4 +1,5 @@
 using System.Reflection;
+using ZeroMcp.Relay.Cli;
 using Microsoft.Extensions.DependencyInjection;
 using ZeroMcp.Relay.Config;
 using ZeroMcp.Relay.Ingestion;
@@ -22,16 +23,13 @@ var command = args[0].ToLowerInvariant();
 switch (command)
 {
     case "configure":
-        Console.WriteLine("Not implemented yet: configure commands.");
-        return 0;
+        return await ConfigureCommandAsync(args.Skip(1).ToArray());
     case "run":
         return await RunCommandAsync(args.Skip(1).ToArray());
     case "tools":
-        Console.WriteLine("Not implemented yet: tools commands.");
-        return 0;
+        return await ToolsCommandAsync(args.Skip(1).ToArray());
     case "validate":
-        Console.WriteLine("Not implemented yet: validate command.");
-        return 0;
+        return await ValidateCommandAsync(args.Skip(1).ToArray());
     default:
         Console.Error.WriteLine($"Unknown command: {args[0]}");
         PrintHelp();
@@ -53,24 +51,17 @@ static void PrintHelp()
 static async Task<int> RunCommandAsync(string[] runArgs)
 {
     var options = RunOptionsParser.Parse(runArgs);
+    if (!string.IsNullOrWhiteSpace(options.EnvPath))
+    {
+        LoadEnvFile(options.EnvPath);
+    }
+
     if (options.Stdio && options.EnableUi)
     {
         await Console.Error.WriteLineAsync("Warning: --enable-ui is ignored in --stdio mode.");
     }
 
-    var services = new ServiceCollection();
-    services.AddSingleton<ISecretResolver, EnvironmentSecretResolver>();
-    services.AddSingleton<RelayConfigService>();
-    services.AddSingleton(sp => new OpenApiSourceLoader(new HttpClient()));
-    services.AddSingleton<OpenApiSpecCache>();
-    services.AddSingleton<OpenApiToolGenerator>();
-    services.AddSingleton<RelayDispatcher>();
-    services.AddSingleton<RelayRuntime>();
-    services.AddSingleton<McpRouter>();
-    services.AddSingleton<StdioServer>();
-    services.AddSingleton<HttpServer>();
-
-    using var provider = services.BuildServiceProvider();
+    using var provider = BuildServices();
     var runtime = provider.GetRequiredService<RelayRuntime>();
     var failFast = options.Stdio;
 
@@ -89,4 +80,90 @@ static async Task<int> RunCommandAsync(string[] runArgs)
 
     var http = provider.GetRequiredService<HttpServer>();
     return await http.RunAsync(options, CancellationToken.None);
+}
+
+static async Task<int> ConfigureCommandAsync(string[] args)
+{
+    using var provider = BuildServices();
+    var cli = provider.GetRequiredService<CliCommandHost>();
+    try
+    {
+        return await cli.RunConfigureAsync(args);
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine(ex.Message);
+        return 1;
+    }
+}
+
+static async Task<int> ToolsCommandAsync(string[] args)
+{
+    using var provider = BuildServices();
+    var cli = provider.GetRequiredService<CliCommandHost>();
+    try
+    {
+        return await cli.RunToolsAsync(args);
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine(ex.Message);
+        return 1;
+    }
+}
+
+static async Task<int> ValidateCommandAsync(string[] args)
+{
+    using var provider = BuildServices();
+    var cli = provider.GetRequiredService<CliCommandHost>();
+    try
+    {
+        return await cli.RunValidateAsync(args);
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine(ex.Message);
+        return 1;
+    }
+}
+
+static ServiceProvider BuildServices()
+{
+    var services = new ServiceCollection();
+    services.AddSingleton<ISecretResolver, EnvironmentSecretResolver>();
+    services.AddSingleton<RelayConfigService>();
+    services.AddSingleton(sp => new OpenApiSourceLoader(new HttpClient()));
+    services.AddSingleton<OpenApiSpecCache>();
+    services.AddSingleton<OpenApiToolGenerator>();
+    services.AddSingleton<RelayDispatcher>();
+    services.AddSingleton<RelayRuntime>();
+    services.AddSingleton<McpRouter>();
+    services.AddSingleton<StdioServer>();
+    services.AddSingleton<HttpServer>();
+    services.AddSingleton<CliCommandHost>();
+    return services.BuildServiceProvider();
+}
+
+static void LoadEnvFile(string envPath)
+{
+    var absolute = Path.GetFullPath(envPath);
+    if (!File.Exists(absolute))
+    {
+        throw new InvalidOperationException($"Env file '{absolute}' does not exist.");
+    }
+
+    foreach (var rawLine in File.ReadAllLines(absolute))
+    {
+        var line = rawLine.Trim();
+        if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#'))
+        {
+            continue;
+        }
+
+        var split = line.Split('=', 2, StringSplitOptions.TrimEntries);
+        if (split.Length == 2 && !string.IsNullOrWhiteSpace(split[0]))
+        {
+            Environment.SetEnvironmentVariable(split[0], split[1]);
+        }
+    }
 }
