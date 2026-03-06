@@ -8,29 +8,11 @@
     ".NETCoreApp,Version=v10.0": {
       "ZeroMcp.Relay/0.1.0": {
         "dependencies": {
-          "Microsoft.Extensions.Http": "10.0.3",
-          "Microsoft.Extensions.Logging.Console": "10.0.3",
           "Microsoft.OpenApi.Readers": "1.6.28",
           "System.CommandLine": "2.0.3"
         },
         "runtime": {
           "ZeroMcp.Relay.dll": {}
-        }
-      },
-      "Microsoft.Extensions.Http/10.0.3": {
-        "runtime": {
-          "lib/net10.0/Microsoft.Extensions.Http.dll": {
-            "assemblyVersion": "10.0.0.0",
-            "fileVersion": "10.0.326.7603"
-          }
-        }
-      },
-      "Microsoft.Extensions.Logging.Console/10.0.3": {
-        "runtime": {
-          "lib/net10.0/Microsoft.Extensions.Logging.Console.dll": {
-            "assemblyVersion": "10.0.0.0",
-            "fileVersion": "10.0.326.7603"
-          }
         }
       },
       "Microsoft.OpenApi/1.6.28": {
@@ -117,20 +99,6 @@
       "type": "project",
       "serviceable": false,
       "sha512": ""
-    },
-    "Microsoft.Extensions.Http/10.0.3": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-M5gWob3dtzlF14oto1lR1ZuSJrR0gGc+obv7zY9LGmX5y3Ndpve29MrrjqJW/m4CFud4TE/KFUuHjjtwxhCO8g==",
-      "path": "microsoft.extensions.http/10.0.3",
-      "hashPath": "microsoft.extensions.http.10.0.3.nupkg.sha512"
-    },
-    "Microsoft.Extensions.Logging.Console/10.0.3": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-7sRvbBH3icaV9qil8fyBKmR+yEZ0yDU6Bq/KgBwswS36164yGaxbf7Kd4hD1iHZ2GfvyoJWWqBUBm9QX/IASAQ==",
-      "path": "microsoft.extensions.logging.console/10.0.3",
-      "hashPath": "microsoft.extensions.logging.console.10.0.3.nupkg.sha512"
     },
     "Microsoft.OpenApi/1.6.28": {
       "type": "package",

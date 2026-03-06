@@ -8,7 +8,11 @@ Core v1 implementation is in place, including:
 - CLI (`configure`, `run`, `tools`, `validate --strict`)
 - OpenAPI ingestion (2.0/3.x JSON/YAML) with tool generation
 - MCP transports (HTTP + stdio) and relay dispatch pipeline
-- Optional UI routes gated behind `--enable-ui`
+- Full Config UI served behind `--enable-ui` with:
+  - API management (add, edit, remove, enable/disable, test connection)
+  - Spec fetch preview (title, version, operation count) before adding
+  - Tool browser with search, per-tool schema inspector
+  - Dark-themed responsive SPA embedded as a resource
 - Acceptance test coverage and CI pipeline
 
 ## Repository Layout

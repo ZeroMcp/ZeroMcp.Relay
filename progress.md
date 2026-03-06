@@ -101,3 +101,24 @@
 - Repository layout fix:
   - Disabled parent Git metadata at `C:/Users/Matt.Anderson/McpRelay/.git` by renaming it to `.git.disabled-parent`.
   - Verified only `C:/Users/Matt.Anderson/McpRelay/ZeroMcp.Relay` is an active Git repository.
+
+## 2026-03-06
+
+- Expanded Config UI from placeholder to full SPA:
+  - Created `Ui/index.html` embedded resource with dark-themed responsive SPA.
+  - UI features: API list sidebar with status indicators, API detail panel, tool browser with search and schema inspector.
+  - Add API flow: name, source URL, fetch-spec preview (shows title/version/operation count), auth config, prefix/timeout, advanced options (headers, include/exclude patterns).
+  - Edit API flow: pre-populates form with current config values.
+  - Remove API flow: confirmation dialog before deletion.
+  - Enable/disable toggle, test connection, toast notifications.
+- Added new backend API endpoints:
+  - `POST /ui/apis` — add a new API to config with full validation.
+  - `PUT /ui/apis/{name}` — edit an existing API.
+  - `DELETE /ui/apis/{name}` — remove an API from config.
+  - `POST /ui/apis/fetch-spec` — fetch and parse an OpenAPI spec URL, returning title, version, path/operation counts, and warnings.
+- Updated `HttpServer` constructor to accept `OpenApiSourceLoader` for spec preview endpoint.
+- Configured `ZeroMcp.Relay.csproj` with `EmbeddedResource` for `Ui/index.html`.
+- Updated `GetRegisteredRouteTemplates` to include new endpoint routes.
+- Validation run:
+  - `dotnet build "ZeroMcp.Relay.slnx" -v minimal` succeeded (0 warnings, 0 errors).
+  - `dotnet test "ZeroMcp.Relay.slnx" -v normal` succeeded (53/53 tests passing).

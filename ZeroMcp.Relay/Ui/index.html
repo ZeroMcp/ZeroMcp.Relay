@@ -1,0 +1,980 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZeroMcp.Relay UI</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #181a20;
+      --surface-2: #21232b;
+      --border: #2d2f38;
+      --text: #e4e4e7;
+      --text-muted: #8b8d97;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --radius: 8px;
+      --sidebar-w: 280px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+    }
+    .layout { display: flex; height: 100vh; }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .sidebar-header h1 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+    .sidebar-header .version { font-size: 11px; color: var(--text-muted); }
+    .api-list { flex: 1; overflow-y: auto; padding: 8px; }
+    .api-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.15s;
+      font-size: 13px;
+    }
+    .api-item:hover { background: var(--surface-2); }
+    .api-item.active { background: var(--accent); color: #fff; }
+    .api-item.active .api-item-meta { color: rgba(255,255,255,0.7); }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .status-dot.ok { background: var(--green); }
+    .status-dot.disabled { background: var(--yellow); }
+    .status-dot.error, .status-dot.degraded { background: var(--red); }
+    .status-dot.not_loaded { background: var(--text-muted); }
+    .api-item-info { flex: 1; min-width: 0; }
+    .api-item-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .api-item-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .sidebar-footer { padding: 12px; border-top: 1px solid var(--border); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn:hover { border-color: var(--text-muted); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .btn-danger { background: transparent; border-color: var(--red); color: var(--red); }
+    .btn-danger:hover { background: var(--red); color: #fff; }
+    .btn-full { width: 100%; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+    /* Main content */
+    .main { flex: 1; overflow-y: auto; padding: 32px 40px; }
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 60vh;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .empty-state h2 { font-size: 18px; margin-bottom: 8px; color: var(--text); }
+    .empty-state p { font-size: 14px; max-width: 360px; line-height: 1.5; }
+
+    /* API Detail */
+    .detail-header { margin-bottom: 24px; }
+    .detail-header h2 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+    .detail-header .source-url { font-size: 13px; color: var(--text-muted); word-break: break-all; }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .detail-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .detail-card .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .detail-card .value { font-size: 14px; font-weight: 500; }
+    .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 28px; }
+    .section-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Tool list */
+    .tool-search {
+      width: 100%;
+      padding: 9px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 13px;
+      margin-bottom: 12px;
+      outline: none;
+    }
+    .tool-search:focus { border-color: var(--accent); }
+    .tool-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .tool-item:hover { border-color: var(--accent); }
+    .tool-item .tool-name { font-size: 13px; font-weight: 600; font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace; }
+    .tool-item .tool-desc { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    .tool-item .tool-method { font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 3px; }
+    .tool-count-note { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+
+    /* Modal overlay */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding-top: 60px;
+      overflow-y: auto;
+    }
+    .modal-backdrop.hidden { display: none; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 560px;
+      max-width: 95vw;
+      margin-bottom: 40px;
+    }
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-header h3 { font-size: 16px; font-weight: 600; }
+    .modal-close {
+      background: none; border: none; color: var(--text-muted); cursor: pointer;
+      font-size: 20px; line-height: 1; padding: 4px;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 20px 24px; }
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* Form fields */
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      padding: 9px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+    .field textarea { resize: vertical; min-height: 60px; }
+    .field .hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+    .field-row { display: flex; gap: 12px; }
+    .field-row .field { flex: 1; }
+    .field-error { border-color: var(--red) !important; }
+    .error-text { color: var(--red); font-size: 12px; margin-top: 4px; }
+
+    /* Spec preview */
+    .spec-preview {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 16px;
+    }
+    .spec-preview .preview-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 3px 0;
+    }
+    .spec-preview .preview-label { color: var(--text-muted); }
+    .spec-preview .preview-value { font-weight: 500; }
+    .spec-preview.error { border-color: var(--red); }
+    .spec-preview.success { border-color: var(--green); }
+
+    /* Auth fields toggle */
+    .auth-fields { margin-top: 8px; }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .toast {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 13px;
+      min-width: 260px;
+      animation: slideIn 0.2s ease;
+    }
+    .toast.success { border-color: var(--green); }
+    .toast.error { border-color: var(--red); }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Tool detail panel */
+    .tool-detail {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-top: 16px;
+    }
+    .tool-detail h4 { font-size: 14px; font-weight: 600; margin-bottom: 12px; font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace; }
+    .tool-detail pre {
+      background: var(--bg);
+      padding: 14px;
+      border-radius: var(--radius);
+      font-size: 12px;
+      overflow-x: auto;
+      line-height: 1.5;
+      font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+      color: var(--text-muted);
+    }
+
+    /* Collapsible advanced */
+    .collapsible-toggle {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-size: 13px;
+      cursor: pointer;
+      padding: 4px 0;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    .collapsible-toggle:hover { color: var(--accent-hover); }
+    .collapsible-content.hidden { display: none; }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid transparent;
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Confirm dialog */
+    .confirm-msg { font-size: 14px; line-height: 1.5; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div>
+          <h1>ZeroMcp.Relay</h1>
+        </div>
+        <span class="version" id="serverVersion"></span>
+      </div>
+      <div class="api-list" id="apiList"></div>
+      <div class="sidebar-footer">
+        <button class="btn btn-primary btn-full" onclick="openAddModal()">+ Add API</button>
+      </div>
+    </div>
+    <div class="main" id="mainContent">
+      <div class="empty-state" id="emptyState">
+        <h2>No API Selected</h2>
+        <p>Select an API from the sidebar or add a new one to get started.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit API Modal -->
+  <div class="modal-backdrop hidden" id="apiModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle">Add API</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="modalError" class="error-text" style="margin-bottom:12px;display:none"></div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="apiName">Name *</label>
+            <input type="text" id="apiName" placeholder="e.g. stripe">
+            <div class="hint">Short identifier for this API</div>
+          </div>
+          <div class="field">
+            <label for="apiPrefix">Prefix</label>
+            <input type="text" id="apiPrefix" placeholder="Defaults to name">
+            <div class="hint">Tool name prefix override</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="apiSource">OpenAPI Spec URL *</label>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="apiSource" placeholder="https://api.example.com/swagger/v1/swagger.json" style="flex:1">
+            <button class="btn btn-sm" id="fetchSpecBtn" onclick="fetchSpec()">Fetch Spec</button>
+          </div>
+        </div>
+
+        <div id="specPreview" style="display:none"></div>
+
+        <div class="field">
+          <label for="apiBaseUrl">Base URL Override</label>
+          <input type="text" id="apiBaseUrl" placeholder="Leave empty to use spec's servers[0].url">
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="authType">Auth Type</label>
+            <select id="authType" onchange="onAuthTypeChange()">
+              <option value="none">None</option>
+              <option value="bearer">Bearer Token</option>
+              <option value="apikey">API Key (Header)</option>
+              <option value="apikey-query">API Key (Query)</option>
+              <option value="basic">Basic Auth</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="apiTimeout">Timeout (seconds)</label>
+            <input type="number" id="apiTimeout" placeholder="Default: 30">
+          </div>
+        </div>
+
+        <div class="auth-fields" id="authFields"></div>
+
+        <button class="collapsible-toggle" onclick="toggleAdvanced()">&#9662; Advanced Options</button>
+        <div class="collapsible-content hidden" id="advancedOptions">
+          <div class="field">
+            <label for="apiHeaders">Custom Headers (JSON object)</label>
+            <textarea id="apiHeaders" placeholder='{"X-Tenant-Id": "acme"}'></textarea>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="apiInclude">Include Patterns (comma-separated)</label>
+              <input type="text" id="apiInclude" placeholder="e.g. stripe_charge_*, stripe_customer_*">
+            </div>
+            <div class="field">
+              <label for="apiExclude">Exclude Patterns (comma-separated)</label>
+              <input type="text" id="apiExclude" placeholder="e.g. *_test_*, radar.*">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="saveApiBtn" onclick="saveApi()">Save API</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div class="modal-backdrop hidden" id="confirmModal">
+    <div class="modal" style="width:400px">
+      <div class="modal-header">
+        <h3 id="confirmTitle">Confirm</h3>
+        <button class="modal-close" onclick="closeConfirm()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="confirm-msg" id="confirmMsg"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeConfirm()">Cancel</button>
+        <button class="btn btn-danger" id="confirmBtn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toasts"></div>
+
+  <script>
+    let apis = [];
+    let selectedApi = null;
+    let editingApi = null;
+    let selectedTool = null;
+
+    async function load() {
+      try {
+        const [configRes, apisRes] = await Promise.all([
+          fetch('/ui/config'),
+          fetch('/ui/apis')
+        ]);
+        const config = await configRes.json();
+        const apisData = await apisRes.json();
+        apis = apisData.apis || [];
+        document.getElementById('serverVersion').textContent = 'v' + (config.serverVersion || '1.0.0');
+        renderSidebar();
+        if (selectedApi) {
+          const found = apis.find(a => a.name === selectedApi.name);
+          if (found) { selectApi(found); } else { clearSelection(); }
+        }
+      } catch (e) {
+        toast('Failed to load data: ' + e.message, 'error');
+      }
+    }
+
+    function renderSidebar() {
+      const list = document.getElementById('apiList');
+      if (apis.length === 0) {
+        list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No APIs configured yet</div>';
+        return;
+      }
+      list.innerHTML = apis.map(api => `
+        <div class="api-item ${selectedApi && selectedApi.name === api.name ? 'active' : ''}"
+             onclick="selectApi(${escAttr(api)})">
+          <span class="status-dot ${api.status || 'not_loaded'}"></span>
+          <div class="api-item-info">
+            <div class="api-item-name">${esc(api.name)}</div>
+            <div class="api-item-meta">${api.toolCount || 0} tools</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function selectApi(api) {
+      selectedApi = api;
+      selectedTool = null;
+      renderSidebar();
+      renderDetail(api);
+    }
+
+    function clearSelection() {
+      selectedApi = null;
+      selectedTool = null;
+      renderSidebar();
+      document.getElementById('mainContent').innerHTML =
+        document.getElementById('emptyState') ? document.getElementById('emptyState').outerHTML :
+        '<div class="empty-state"><h2>No API Selected</h2><p>Select an API from the sidebar or add a new one to get started.</p></div>';
+    }
+
+    async function renderDetail(api) {
+      const main = document.getElementById('mainContent');
+      const authType = api.authType || 'none';
+      const statusLabel = {ok:'Loaded',disabled:'Disabled',error:'Error',degraded:'Degraded',not_loaded:'Not Loaded'}[api.status] || api.status;
+
+      main.innerHTML = `
+        <div class="detail-header">
+          <h2>${esc(api.name)}</h2>
+          <div class="source-url">${esc(api.source)}</div>
+        </div>
+        <div class="detail-grid">
+          <div class="detail-card">
+            <div class="label">Status</div>
+            <div class="value"><span class="status-dot ${api.status}" style="display:inline-block;vertical-align:middle;margin-right:6px"></span>${esc(statusLabel)}</div>
+          </div>
+          <div class="detail-card">
+            <div class="label">Tools</div>
+            <div class="value">${api.toolCount || 0}</div>
+          </div>
+          <div class="detail-card">
+            <div class="label">Auth</div>
+            <div class="value">${esc(authType)}</div>
+          </div>
+          <div class="detail-card">
+            <div class="label">Enabled</div>
+            <div class="value">${api.enabled ? 'Yes' : 'No'}</div>
+          </div>
+        </div>
+        ${api.error ? `<div class="spec-preview error" style="margin-bottom:20px"><div class="preview-row"><span class="preview-label">Error</span><span class="preview-value" style="color:var(--red)">${esc(api.error)}</span></div></div>` : ''}
+        <div class="detail-actions">
+          <button class="btn" onclick="openEditModal('${esc(api.name)}')">Edit</button>
+          <button class="btn" onclick="testConnection('${esc(api.name)}')">Test Connection</button>
+          <button class="btn" onclick="toggleApi('${esc(api.name)}', ${!api.enabled})">${api.enabled ? 'Disable' : 'Enable'}</button>
+          <button class="btn btn-danger" onclick="confirmRemoveApi('${esc(api.name)}')">Remove</button>
+        </div>
+        <div class="section-title">Tools</div>
+        <input class="tool-search" placeholder="Search tools..." oninput="filterTools(this.value, '${esc(api.name)}')">
+        <div class="tool-count-note" id="toolCountNote"></div>
+        <div id="toolList">Loading tools...</div>
+        <div id="toolDetail"></div>
+      `;
+      loadTools(api.name);
+    }
+
+    let allTools = [];
+    async function loadTools(apiName) {
+      try {
+        const res = await fetch('/ui/tools?api=' + encodeURIComponent(apiName));
+        const data = await res.json();
+        allTools = data.tools || [];
+        renderTools(allTools);
+      } catch (e) {
+        document.getElementById('toolList').innerHTML = '<div style="color:var(--text-muted);font-size:13px">Failed to load tools.</div>';
+      }
+    }
+
+    function renderTools(tools) {
+      const note = document.getElementById('toolCountNote');
+      if (note) note.textContent = tools.length + ' tool' + (tools.length !== 1 ? 's' : '');
+      const list = document.getElementById('toolList');
+      if (!list) return;
+      if (tools.length === 0) {
+        list.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:12px 0">No tools found.</div>';
+        return;
+      }
+      list.innerHTML = tools.map(t => `
+        <div class="tool-item" onclick="inspectTool('${esc(t.name)}')">
+          <div class="tool-name">${esc(t.name)}</div>
+          <div class="tool-desc">${esc(t.description || '')}</div>
+          <div class="tool-method">${esc(t.httpMethod)} ${esc(t.path)}</div>
+        </div>
+      `).join('');
+    }
+
+    function filterTools(query, apiName) {
+      if (!query.trim()) { renderTools(allTools); return; }
+      const q = query.toLowerCase();
+      const filtered = allTools.filter(t =>
+        t.name.toLowerCase().includes(q) ||
+        (t.description || '').toLowerCase().includes(q)
+      );
+      renderTools(filtered);
+    }
+
+    async function inspectTool(name) {
+      const detail = document.getElementById('toolDetail');
+      if (!detail) return;
+      if (selectedTool === name) { selectedTool = null; detail.innerHTML = ''; return; }
+      selectedTool = name;
+      try {
+        const res = await fetch('/ui/tools/' + encodeURIComponent(name));
+        const tool = await res.json();
+        detail.innerHTML = `
+          <div class="tool-detail">
+            <h4>${esc(tool.name)}</h4>
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px">${esc(tool.description || '')}</p>
+            <div class="section-title" style="font-size:13px">Input Schema</div>
+            <pre>${esc(JSON.stringify(tool.inputSchema, null, 2))}</pre>
+          </div>
+        `;
+      } catch (e) {
+        detail.innerHTML = '<div class="error-text">Failed to load tool details.</div>';
+      }
+    }
+
+    // Add/Edit Modal
+    function openAddModal() {
+      editingApi = null;
+      document.getElementById('modalTitle').textContent = 'Add API';
+      document.getElementById('saveApiBtn').textContent = 'Save API';
+      resetForm();
+      document.getElementById('apiModal').classList.remove('hidden');
+    }
+
+    async function openEditModal(name) {
+      try {
+        const res = await fetch('/ui/config');
+        const config = await res.json();
+        const api = (config.apis || []).find(a => a.name.toLowerCase() === name.toLowerCase());
+        if (!api) { toast('API not found in config', 'error'); return; }
+        editingApi = api.name;
+        document.getElementById('modalTitle').textContent = 'Edit API: ' + api.name;
+        document.getElementById('saveApiBtn').textContent = 'Update API';
+        resetForm();
+        document.getElementById('apiName').value = api.name;
+        document.getElementById('apiName').disabled = true;
+        document.getElementById('apiSource').value = api.source || '';
+        document.getElementById('apiBaseUrl').value = api.baseUrl || '';
+        document.getElementById('apiPrefix').value = api.prefix || '';
+        document.getElementById('apiTimeout').value = api.timeout || '';
+        document.getElementById('authType').value = (api.auth && api.auth.type) || 'none';
+        onAuthTypeChange();
+        populateAuthFields(api.auth);
+        if (api.headers && Object.keys(api.headers).length > 0) {
+          document.getElementById('apiHeaders').value = JSON.stringify(api.headers, null, 2);
+        }
+        if (api.include && api.include.length > 0) {
+          document.getElementById('apiInclude').value = api.include.join(', ');
+        }
+        if (api.exclude && api.exclude.length > 0) {
+          document.getElementById('apiExclude').value = api.exclude.join(', ');
+        }
+        document.getElementById('apiModal').classList.remove('hidden');
+      } catch (e) {
+        toast('Failed to load API config: ' + e.message, 'error');
+      }
+    }
+
+    function populateAuthFields(auth) {
+      if (!auth) return;
+      switch (auth.type) {
+        case 'bearer':
+          setVal('authToken', auth.token); break;
+        case 'apikey':
+          setVal('authHeader', auth.header); setVal('authValue', auth.value); break;
+        case 'apikey-query':
+          setVal('authParameter', auth.parameter); setVal('authValue', auth.value); break;
+        case 'basic':
+          setVal('authUsername', auth.username); setVal('authPassword', auth.password); break;
+      }
+    }
+    function setVal(id, val) { const el = document.getElementById(id); if (el) el.value = val || ''; }
+
+    function closeModal() {
+      document.getElementById('apiModal').classList.add('hidden');
+      document.getElementById('apiName').disabled = false;
+      editingApi = null;
+    }
+
+    function resetForm() {
+      ['apiName','apiSource','apiBaseUrl','apiPrefix','apiTimeout','apiHeaders','apiInclude','apiExclude'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('authType').value = 'none';
+      document.getElementById('authFields').innerHTML = '';
+      document.getElementById('specPreview').style.display = 'none';
+      document.getElementById('specPreview').innerHTML = '';
+      document.getElementById('modalError').style.display = 'none';
+      document.getElementById('advancedOptions').classList.add('hidden');
+    }
+
+    function onAuthTypeChange() {
+      const type = document.getElementById('authType').value;
+      const container = document.getElementById('authFields');
+      switch (type) {
+        case 'none':
+          container.innerHTML = ''; break;
+        case 'bearer':
+          container.innerHTML = `
+            <div class="field">
+              <label for="authToken">Bearer Token *</label>
+              <input type="text" id="authToken" placeholder="env:MY_TOKEN or literal value">
+              <div class="hint">Use env:VAR_NAME to reference environment variables</div>
+            </div>`;
+          break;
+        case 'apikey':
+          container.innerHTML = `
+            <div class="field-row">
+              <div class="field">
+                <label for="authHeader">Header Name *</label>
+                <input type="text" id="authHeader" placeholder="X-Api-Key">
+              </div>
+              <div class="field">
+                <label for="authValue">Value *</label>
+                <input type="text" id="authValue" placeholder="env:MY_KEY">
+              </div>
+            </div>`;
+          break;
+        case 'apikey-query':
+          container.innerHTML = `
+            <div class="field-row">
+              <div class="field">
+                <label for="authParameter">Query Parameter *</label>
+                <input type="text" id="authParameter" placeholder="api_key">
+              </div>
+              <div class="field">
+                <label for="authValue">Value *</label>
+                <input type="text" id="authValue" placeholder="env:MY_KEY">
+              </div>
+            </div>`;
+          break;
+        case 'basic':
+          container.innerHTML = `
+            <div class="field-row">
+              <div class="field">
+                <label for="authUsername">Username *</label>
+                <input type="text" id="authUsername" placeholder="myuser">
+              </div>
+              <div class="field">
+                <label for="authPassword">Password *</label>
+                <input type="text" id="authPassword" placeholder="env:MY_PASSWORD">
+              </div>
+            </div>`;
+          break;
+      }
+    }
+
+    function toggleAdvanced() {
+      document.getElementById('advancedOptions').classList.toggle('hidden');
+    }
+
+    async function fetchSpec() {
+      const source = document.getElementById('apiSource').value.trim();
+      if (!source) { toast('Enter a spec URL first', 'error'); return; }
+      const btn = document.getElementById('fetchSpecBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>';
+      const preview = document.getElementById('specPreview');
+      try {
+        const res = await fetch('/ui/apis/fetch-spec', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({source})
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          preview.className = 'spec-preview error';
+          preview.innerHTML = `<div class="preview-row"><span class="preview-label">Error</span><span class="preview-value" style="color:var(--red)">${esc(data.error || 'Failed to fetch spec')}</span></div>`;
+        } else {
+          preview.className = 'spec-preview success';
+          preview.innerHTML = `
+            <div class="preview-row"><span class="preview-label">Title</span><span class="preview-value">${esc(data.title || 'Untitled')}</span></div>
+            <div class="preview-row"><span class="preview-label">Version</span><span class="preview-value">${esc(data.version || '-')}</span></div>
+            <div class="preview-row"><span class="preview-label">Operations</span><span class="preview-value">${data.operationCount || 0}</span></div>
+            <div class="preview-row"><span class="preview-label">Paths</span><span class="preview-value">${data.pathCount || 0}</span></div>
+            ${data.warnings && data.warnings.length > 0 ? `<div class="preview-row"><span class="preview-label">Warnings</span><span class="preview-value" style="color:var(--yellow)">${data.warnings.length}</span></div>` : ''}
+          `;
+        }
+        preview.style.display = 'block';
+      } catch (e) {
+        preview.className = 'spec-preview error';
+        preview.innerHTML = `<div class="preview-row"><span class="preview-label">Error</span><span class="preview-value" style="color:var(--red)">${esc(e.message)}</span></div>`;
+        preview.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Fetch Spec';
+      }
+    }
+
+    function buildApiPayload() {
+      const name = document.getElementById('apiName').value.trim();
+      const source = document.getElementById('apiSource').value.trim();
+      if (!name) return {error: 'Name is required'};
+      if (!source) return {error: 'Source URL is required'};
+
+      const payload = { name, source };
+      const baseUrl = document.getElementById('apiBaseUrl').value.trim();
+      if (baseUrl) payload.baseUrl = baseUrl;
+      const prefix = document.getElementById('apiPrefix').value.trim();
+      if (prefix) payload.prefix = prefix;
+      const timeout = document.getElementById('apiTimeout').value.trim();
+      if (timeout) payload.timeout = parseInt(timeout, 10);
+
+      const authType = document.getElementById('authType').value;
+      if (authType !== 'none') {
+        payload.auth = {type: authType};
+        switch (authType) {
+          case 'bearer':
+            payload.auth.token = getVal('authToken'); break;
+          case 'apikey':
+            payload.auth.header = getVal('authHeader');
+            payload.auth.value = getVal('authValue'); break;
+          case 'apikey-query':
+            payload.auth.parameter = getVal('authParameter');
+            payload.auth.value = getVal('authValue'); break;
+          case 'basic':
+            payload.auth.username = getVal('authUsername');
+            payload.auth.password = getVal('authPassword'); break;
+        }
+      }
+
+      const headersStr = document.getElementById('apiHeaders').value.trim();
+      if (headersStr) {
+        try { payload.headers = JSON.parse(headersStr); }
+        catch { return {error: 'Invalid JSON in custom headers'}; }
+      }
+      const include = document.getElementById('apiInclude').value.trim();
+      if (include) payload.include = include.split(',').map(s => s.trim()).filter(Boolean);
+      const exclude = document.getElementById('apiExclude').value.trim();
+      if (exclude) payload.exclude = exclude.split(',').map(s => s.trim()).filter(Boolean);
+
+      return {payload};
+    }
+    function getVal(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+    async function saveApi() {
+      const {payload, error} = buildApiPayload();
+      if (error) { showModalError(error); return; }
+      const btn = document.getElementById('saveApiBtn');
+      btn.disabled = true;
+      try {
+        const url = editingApi ? '/ui/apis/' + encodeURIComponent(editingApi) : '/ui/apis';
+        const method = editingApi ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+          method,
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showModalError(data.error || 'Failed to save API');
+          return;
+        }
+        closeModal();
+        toast(editingApi ? 'API updated successfully' : 'API added successfully', 'success');
+        selectedApi = { name: payload.name };
+        await load();
+      } catch (e) {
+        showModalError(e.message);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function showModalError(msg) {
+      const el = document.getElementById('modalError');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    async function toggleApi(name, enabled) {
+      try {
+        await fetch('/ui/apis/toggle/' + encodeURIComponent(name), {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({enabled})
+        });
+        toast(enabled ? 'API enabled' : 'API disabled', 'success');
+        await load();
+      } catch (e) {
+        toast('Failed: ' + e.message, 'error');
+      }
+    }
+
+    async function testConnection(name) {
+      toast('Testing connection...', 'success');
+      try {
+        const res = await fetch('/ui/apis/test/' + encodeURIComponent(name), {method: 'POST'});
+        const data = await res.json();
+        if (data.status === 'ok') {
+          toast(`Connection OK - ${data.toolCount} tools loaded`, 'success');
+        } else {
+          toast(`Status: ${data.status}${data.error ? ' - ' + data.error : ''}`, 'error');
+        }
+        await load();
+      } catch (e) {
+        toast('Test failed: ' + e.message, 'error');
+      }
+    }
+
+    function confirmRemoveApi(name) {
+      document.getElementById('confirmTitle').textContent = 'Remove API';
+      document.getElementById('confirmMsg').textContent = `Are you sure you want to remove "${name}"? This will delete the API configuration.`;
+      document.getElementById('confirmBtn').onclick = () => removeApi(name);
+      document.getElementById('confirmModal').classList.remove('hidden');
+    }
+
+    function closeConfirm() {
+      document.getElementById('confirmModal').classList.add('hidden');
+    }
+
+    async function removeApi(name) {
+      closeConfirm();
+      try {
+        const res = await fetch('/ui/apis/' + encodeURIComponent(name), {method: 'DELETE'});
+        if (!res.ok) {
+          const data = await res.json();
+          toast(data.error || 'Failed to remove API', 'error');
+          return;
+        }
+        toast('API removed', 'success');
+        if (selectedApi && selectedApi.name === name) clearSelection();
+        await load();
+      } catch (e) {
+        toast('Failed: ' + e.message, 'error');
+      }
+    }
+
+    function toast(msg, type) {
+      const container = document.getElementById('toasts');
+      const el = document.createElement('div');
+      el.className = 'toast ' + (type || '');
+      el.textContent = msg;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
+
+    function esc(s) {
+      if (typeof s !== 'string') return '';
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function escAttr(obj) {
+      return JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    // Use JSON-safe onclick approach instead of escAttr
+    document.addEventListener('click', function(e) {});
+
+    // Override renderSidebar to use data attributes
+    function renderSidebar() {
+      const list = document.getElementById('apiList');
+      if (apis.length === 0) {
+        list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No APIs configured yet</div>';
+        return;
+      }
+      list.innerHTML = apis.map((api, i) => `
+        <div class="api-item ${selectedApi && selectedApi.name === api.name ? 'active' : ''}"
+             data-idx="${i}">
+          <span class="status-dot ${api.status || 'not_loaded'}"></span>
+          <div class="api-item-info">
+            <div class="api-item-name">${esc(api.name)}</div>
+            <div class="api-item-meta">${api.toolCount || 0} tools</div>
+          </div>
+        </div>
+      `).join('');
+      list.querySelectorAll('.api-item[data-idx]').forEach(el => {
+        el.addEventListener('click', () => selectApi(apis[parseInt(el.dataset.idx)]));
+      });
+    }
+
+    load();
+  </script>
+</body>
+</html>
