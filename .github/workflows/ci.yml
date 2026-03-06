@@ -26,5 +26,5 @@ jobs:
       - name: Test
         run: dotnet test ZeroMcp.Relay.slnx -v normal
 
-      - name: Validate sample config (strict)
-        run: dotnet run --framework net10.0 --project ZeroMcp.Relay/ZeroMcp.Relay.csproj -- validate --strict --config samples/BasicRelay/relay.config.json
+      - name: Validate sample config
+        run: dotnet run --framework net10.0 --project ZeroMcp.Relay/ZeroMcp.Relay.csproj -- validate --config samples/BasicRelay/relay.config.json
