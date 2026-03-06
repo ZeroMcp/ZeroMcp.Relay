@@ -11,7 +11,8 @@ public sealed class HttpServer(
     McpRouter router,
     RelayRuntime runtime,
     RelayConfigService configService,
-    OpenApiSourceLoader specLoader)
+    OpenApiSourceLoader specLoader,
+    OpenApiToolGenerator toolGenerator)
 {
     private static readonly Lazy<string> EmbeddedUiHtml = new(() =>
     {
@@ -31,6 +32,7 @@ public sealed class HttpServer(
                 "/", "/ui", "/ui/config",
                 "/ui/apis", "/ui/apis (POST)", "/ui/apis/{name} (PUT)", "/ui/apis/{name} (DELETE)",
                 "/ui/apis/toggle/{name}", "/ui/apis/test/{name}", "/ui/apis/fetch-spec",
+                "/ui/apis/{name}/all-tools", "/ui/apis/{name}/tools/{toolName}/toggle",
                 "/ui/tools", "/ui/tools/{name}", "/ui/tools/invoke",
                 "/admin/reload"
             ]);
@@ -209,6 +211,67 @@ public sealed class HttpServer(
                 {
                     return Results.BadRequest(new { error = ex.Message });
                 }
+            });
+
+            app.MapGet("/ui/apis/{name}/all-tools", async (string name) =>
+            {
+                await runtime.EnsureApisLoadedAsync(validateOnStart: false, failFast: false, cancellationToken);
+                if (!runtime.ApiStates.TryGetValue(name, out var state))
+                    return Results.NotFound(new { error = $"API '{name}' not found." });
+
+                var unfilteredApi = new ApiConfig
+                {
+                    Name = state.Api.Name,
+                    Source = state.Api.Source,
+                    Prefix = state.Api.Prefix,
+                    Include = state.Api.Include,
+                    Exclude = []
+                };
+                var allResult = toolGenerator.Generate(unfilteredApi, state.Document);
+                var enabledNames = new HashSet<string>(
+                    state.Tools.Select(t => t.Name),
+                    StringComparer.OrdinalIgnoreCase);
+
+                var tools = allResult.Tools
+                    .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
+                    .Select(t => new
+                    {
+                        t.Name,
+                        t.Description,
+                        t.ApiName,
+                        t.HttpMethod,
+                        t.Path,
+                        enabled = enabledNames.Contains(t.Name)
+                    });
+
+                var enabledCount = enabledNames.Count;
+                var totalCount = allResult.Tools.Count;
+                return Results.Json(new { tools, enabledCount, totalCount });
+            });
+
+            app.MapPost("/ui/apis/{name}/tools/{toolName}/toggle", async (HttpContext context, string name, string toolName) =>
+            {
+                using var body = await JsonDocument.ParseAsync(context.Request.Body, cancellationToken: cancellationToken);
+                var enabled = body.RootElement.TryGetProperty("enabled", out var enabledNode) && enabledNode.GetBoolean();
+
+                var config = await configService.LoadAsync(options.ConfigPath, cancellationToken);
+                var api = config.Apis.FirstOrDefault(a => a.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+                if (api is null)
+                    return Results.NotFound(new { error = $"API '{name}' not found." });
+
+                if (enabled)
+                {
+                    api.Exclude.RemoveAll(e => e.Equals(toolName, StringComparison.OrdinalIgnoreCase));
+                }
+                else
+                {
+                    if (!api.Exclude.Any(e => e.Equals(toolName, StringComparison.OrdinalIgnoreCase)))
+                        api.Exclude.Add(toolName);
+                }
+
+                await configService.SaveAsync(config, options.ConfigPath, cancellationToken);
+                await runtime.ReloadAsync(options.ConfigPath, options.ValidateOnStart, options.Lazy, failFast: false, cancellationToken);
+                return Results.Ok(new { name, toolName, enabled });
             });
 
             app.MapPost("/ui/apis/toggle/{name}", async (HttpContext context, string name) =>

@@ -158,13 +158,46 @@
       border-radius: var(--radius);
       padding: 12px 16px;
       margin-bottom: 8px;
-      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
       transition: border-color 0.15s;
     }
     .tool-item:hover { border-color: var(--accent); }
-    .tool-item .tool-name { font-size: 13px; font-weight: 600; font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace; }
-    .tool-item .tool-desc { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-    .tool-item .tool-method { font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 3px; }
+    .tool-item.tool-disabled { opacity: 0.45; }
+    .tool-item.tool-disabled:hover { opacity: 0.65; }
+    .tool-toggle {
+      flex-shrink: 0;
+      position: relative;
+      width: 36px;
+      height: 20px;
+      margin-top: 2px;
+    }
+    .tool-toggle input {
+      opacity: 0; width: 0; height: 0; position: absolute;
+    }
+    .tool-toggle .slider {
+      position: absolute; inset: 0; cursor: pointer;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      transition: all 0.2s;
+    }
+    .tool-toggle .slider::before {
+      content: '';
+      position: absolute;
+      width: 14px; height: 14px;
+      left: 2px; top: 2px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+    .tool-toggle input:checked + .slider { background: var(--accent); border-color: var(--accent); }
+    .tool-toggle input:checked + .slider::before { transform: translateX(16px); background: #fff; }
+    .tool-info { flex: 1; min-width: 0; cursor: pointer; }
+    .tool-info .tool-name { font-size: 13px; font-weight: 600; font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace; }
+    .tool-info .tool-desc { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    .tool-info .tool-method { font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 3px; }
     .tool-count-note { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
 
     /* Modal overlay */
@@ -559,33 +592,78 @@
     }
 
     let allTools = [];
+    let currentToolApiName = '';
     async function loadTools(apiName) {
+      currentToolApiName = apiName;
       try {
-        const res = await fetch('/ui/tools?api=' + encodeURIComponent(apiName));
+        const res = await fetch('/ui/apis/' + encodeURIComponent(apiName) + '/all-tools');
         const data = await res.json();
         allTools = data.tools || [];
-        renderTools(allTools);
+        renderTools(allTools, data.enabledCount, data.totalCount);
       } catch (e) {
         document.getElementById('toolList').innerHTML = '<div style="color:var(--text-muted);font-size:13px">Failed to load tools.</div>';
       }
     }
 
-    function renderTools(tools) {
+    function renderTools(tools, enabledCount, totalCount) {
       const note = document.getElementById('toolCountNote');
-      if (note) note.textContent = tools.length + ' tool' + (tools.length !== 1 ? 's' : '');
+      if (note) {
+        if (enabledCount !== undefined && totalCount !== undefined) {
+          note.textContent = enabledCount + ' of ' + totalCount + ' tool' + (totalCount !== 1 ? 's' : '') + ' enabled';
+        } else {
+          note.textContent = tools.length + ' tool' + (tools.length !== 1 ? 's' : '');
+        }
+      }
       const list = document.getElementById('toolList');
       if (!list) return;
       if (tools.length === 0) {
         list.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:12px 0">No tools found.</div>';
         return;
       }
-      list.innerHTML = tools.map(t => `
-        <div class="tool-item" onclick="inspectTool('${esc(t.name)}')">
-          <div class="tool-name">${esc(t.name)}</div>
-          <div class="tool-desc">${esc(t.description || '')}</div>
-          <div class="tool-method">${esc(t.httpMethod)} ${esc(t.path)}</div>
+      list.innerHTML = tools.map((t, i) => `
+        <div class="tool-item ${t.enabled === false ? 'tool-disabled' : ''}" data-tool-idx="${i}">
+          <label class="tool-toggle" onclick="event.stopPropagation()">
+            <input type="checkbox" ${t.enabled !== false ? 'checked' : ''} data-tool-toggle="${i}">
+            <span class="slider"></span>
+          </label>
+          <div class="tool-info">
+            <div class="tool-name">${esc(t.name)}</div>
+            <div class="tool-desc">${esc(t.description || '')}</div>
+            <div class="tool-method">${esc(t.httpMethod)} ${esc(t.path)}</div>
+          </div>
         </div>
       `).join('');
+      list.querySelectorAll('.tool-info').forEach((el, i) => {
+        el.addEventListener('click', () => inspectTool(tools[i].name));
+      });
+      list.querySelectorAll('[data-tool-toggle]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const idx = parseInt(cb.dataset.toolToggle);
+          toggleTool(currentToolApiName, tools[idx].name, cb.checked);
+        });
+      });
+    }
+
+    async function toggleTool(apiName, toolName, enabled) {
+      try {
+        const res = await fetch('/ui/apis/' + encodeURIComponent(apiName) + '/tools/' + encodeURIComponent(toolName) + '/toggle', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({enabled})
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          toast(data.error || 'Failed to toggle tool', 'error');
+          loadTools(apiName);
+          return;
+        }
+        toast(enabled ? 'Tool enabled' : 'Tool disabled', 'success');
+        loadTools(apiName);
+        load();
+      } catch (e) {
+        toast('Failed: ' + e.message, 'error');
+        loadTools(apiName);
+      }
     }
 
     function filterTools(query, apiName) {
@@ -596,6 +674,13 @@
         (t.description || '').toLowerCase().includes(q)
       );
       renderTools(filtered);
+    }
+
+    function updateToolCount(apiName) {
+      const enabledCount = allTools.filter(t => t.enabled !== false).length;
+      const totalCount = allTools.length;
+      const note = document.getElementById('toolCountNote');
+      if (note) note.textContent = enabledCount + ' of ' + totalCount + ' tool' + (totalCount !== 1 ? 's' : '') + ' enabled';
     }
 
     async function inspectTool(name) {
