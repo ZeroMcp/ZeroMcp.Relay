@@ -5,15 +5,14 @@
   "defaultTimeout": 30,
   "apis": [
     {
-      "name": "demo",
-      "source": "https://example.com/openapi.json",
+      "name": "petstore",
+      "source": "https://petstore3.swagger.io/api/v3/openapi.json",
       "baseUrl": null,
-      "prefix": "demo",
+      "prefix": "petstore",
       "enabled": true,
       "timeout": 30,
       "auth": {
-        "type": "bearer",
-        "token": "env:DEMO_TOKEN"
+        "type": "none"
       },
       "headers": {},
       "include": [],

@@ -124,3 +124,4 @@
   - `dotnet test "ZeroMcp.Relay.slnx" -v normal` succeeded (53/53 tests passing).
 - Rewrote `README.md` with full usage instructions covering installation, quick start, complete CLI reference, configuration schema, authentication models, HTTP server mode, config UI, stdio mode, OpenAPI ingestion, tool generation, deployment patterns (stdio/Docker/CI), and development guide.
 - Fixed CI pipeline: corrected stale `src/ZeroMcp.Relay/` project path to `ZeroMcp.Relay/` in `.github/workflows/ci.yml`.
+- Fixed CI validate step: replaced placeholder `https://example.com/openapi.json` in `samples/BasicRelay/relay.config.json` with the real Petstore spec URL (`https://petstore3.swagger.io/api/v3/openapi.json`) and switched auth to `none` so the sample can be validated without dummy env vars.
