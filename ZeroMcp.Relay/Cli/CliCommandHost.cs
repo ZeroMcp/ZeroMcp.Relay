@@ -318,7 +318,11 @@ public sealed class CliCommandHost(IServiceProvider serviceProvider)
         }
 
         api.Auth ??= new AuthConfig { Type = "none" };
-        if (TryGetOption(options, "--bearer", out var bearer))
+        if (options.ContainsKey("--passthrough"))
+        {
+            api.Auth.Type = "passthrough";
+        }
+        else if (TryGetOption(options, "--bearer", out var bearer))
         {
             api.Auth.Type = "bearer";
             api.Auth.Token = bearer;
@@ -336,7 +340,7 @@ public sealed class CliCommandHost(IServiceProvider serviceProvider)
         }
         else
         {
-            Console.Error.WriteLine("Expected one of: --bearer, --api-key, --password.");
+            Console.Error.WriteLine("Expected one of: --passthrough, --bearer, --api-key, --password.");
             return 1;
         }
 
@@ -427,6 +431,11 @@ public sealed class CliCommandHost(IServiceProvider serviceProvider)
 
     private AuthConfig? ParseAuth(Dictionary<string, List<string>> options)
     {
+        if (options.ContainsKey("--passthrough"))
+        {
+            return new AuthConfig { Type = "passthrough" };
+        }
+
         if (TryGetOption(options, "-b", out var bearer) || TryGetOption(options, "--bearer", out bearer))
         {
             return new AuthConfig { Type = "bearer", Token = bearer };

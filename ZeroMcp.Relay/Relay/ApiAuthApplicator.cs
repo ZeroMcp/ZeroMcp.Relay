@@ -6,7 +6,12 @@ namespace ZeroMcp.Relay.Relay;
 
 public static class ApiAuthApplicator
 {
-    public static Uri ApplyAuth(ApiConfig api, HttpRequestMessage request, Uri originalUri, string? resolvedSecret)
+    public static Uri ApplyAuth(
+        ApiConfig api,
+        HttpRequestMessage request,
+        Uri originalUri,
+        string? resolvedSecret,
+        IReadOnlyDictionary<string, string[]>? inboundHeaders = null)
     {
         if (api.Auth is null)
         {
@@ -17,6 +22,17 @@ public static class ApiAuthApplicator
         switch (authType)
         {
             case "none":
+                return originalUri;
+
+            case "passthrough":
+                if (inboundHeaders is not null &&
+                    inboundHeaders.TryGetValue("Authorization", out var authValues) &&
+                    authValues.Length > 0 &&
+                    !string.IsNullOrWhiteSpace(authValues[0]))
+                {
+                    request.Headers.TryAddWithoutValidation("Authorization", authValues[0]);
+                }
+
                 return originalUri;
 
             case "bearer":

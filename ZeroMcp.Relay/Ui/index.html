@@ -484,6 +484,7 @@
             <label for="authType">Auth Type</label>
             <select id="authType" onchange="onAuthTypeChange()">
               <option value="none">None</option>
+              <option value="passthrough">Passthrough (forward inbound auth)</option>
               <option value="bearer">Bearer Token</option>
               <option value="apikey">API Key (Header)</option>
               <option value="apikey-query">API Key (Query)</option>
@@ -500,6 +501,11 @@
 
         <button class="collapsible-toggle" onclick="toggleAdvanced()">&#9662; Advanced Options</button>
         <div class="collapsible-content hidden" id="advancedOptions">
+          <div class="field">
+            <label for="apiForwardHeaders">Forward Headers (comma-separated)</label>
+            <input type="text" id="apiForwardHeaders" placeholder="e.g. X-Correlation-Id, X-Tenant-Id">
+            <div class="hint">Headers from the incoming request to forward to this API (Authorization is handled by auth type)</div>
+          </div>
           <div class="field">
             <label for="apiHeaders">Custom Headers (JSON object)</label>
             <textarea id="apiHeaders" placeholder='{"X-Tenant-Id": "acme"}'></textarea>
@@ -835,6 +841,9 @@
         document.getElementById('authType').value = (api.auth && api.auth.type) || 'none';
         onAuthTypeChange();
         populateAuthFields(api.auth);
+        if (api.forwardHeaders && api.forwardHeaders.length > 0) {
+          document.getElementById('apiForwardHeaders').value = api.forwardHeaders.join(', ');
+        }
         if (api.headers && Object.keys(api.headers).length > 0) {
           document.getElementById('apiHeaders').value = JSON.stringify(api.headers, null, 2);
         }
@@ -872,7 +881,7 @@
     }
 
     function resetForm() {
-      ['apiName','apiSource','apiBaseUrl','apiPrefix','apiTimeout','apiHeaders','apiInclude','apiExclude'].forEach(id => {
+      ['apiName','apiSource','apiBaseUrl','apiPrefix','apiTimeout','apiForwardHeaders','apiHeaders','apiInclude','apiExclude'].forEach(id => {
         document.getElementById(id).value = '';
       });
       document.getElementById('authType').value = 'none';
@@ -889,6 +898,13 @@
       switch (type) {
         case 'none':
           container.innerHTML = ''; break;
+        case 'passthrough':
+          container.innerHTML = `
+            <div class="hint" style="padding:8px 0">
+              The Authorization header from the incoming HTTP request (Bearer, SAML, etc.) will be forwarded
+              directly to this API. Use <strong>Forward Headers</strong> in Advanced Options to pass additional headers.
+            </div>`;
+          break;
         case 'bearer':
           container.innerHTML = `
             <div class="field">
@@ -1012,6 +1028,9 @@
             payload.auth.password = getVal('authPassword'); break;
         }
       }
+
+      const forwardHeaders = document.getElementById('apiForwardHeaders').value.trim();
+      if (forwardHeaders) payload.forwardHeaders = forwardHeaders.split(',').map(s => s.trim()).filter(Boolean);
 
       const headersStr = document.getElementById('apiHeaders').value.trim();
       if (headersStr) {

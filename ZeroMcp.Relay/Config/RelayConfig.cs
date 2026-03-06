@@ -34,6 +34,8 @@ public sealed class ApiConfig
 
     public Dictionary<string, string> Headers { get; set; } = [];
 
+    public List<string> ForwardHeaders { get; set; } = [];
+
     public List<string> Include { get; set; } = [];
 
     public List<string> Exclude { get; set; } = [];

@@ -146,3 +146,12 @@
   - Uses `--skip-duplicate` to safely re-run without failure.
 - Fixed `dotnet pack` failure: corrected README path in `ZeroMcp.Relay.csproj` from `..\..\README.md` to `..\README.md` (README is one level up at repo root, not two).
 - Updated CI triggers: removed `push: branches: [main]` so the build-test-validate job only runs on pull requests (pre-merge check) and tag pushes (for publish), not redundantly on every merge to main.
+- Added **passthrough authentication** and **header forwarding** support:
+  - New auth type `passthrough`: forwards the `Authorization` header from the inbound HTTP request directly to the outbound API call. Supports Bearer tokens, SAML assertions, and any other scheme in the Authorization header.
+  - New `forwardHeaders` config property on `ApiConfig`: a list of header names to forward from the inbound request to the outbound API call (e.g. `X-Correlation-Id`, `X-Tenant-Id`). The `Authorization` header is handled separately by the auth type to avoid duplication.
+  - Threaded inbound headers through the full dispatch chain: `HttpServer` extracts headers from `HttpContext` → `McpRouter.HandleAsync()` → `RelayRuntime.DispatchAsync()` → `RelayDispatcher.DispatchAsync()` → `ApiAuthApplicator.ApplyAuth()`.
+  - Stdio mode passes `null` for inbound headers (no HTTP context available).
+  - Updated `RelayConfigService` validation to accept `passthrough` auth type without requiring secrets.
+  - Updated `ConfigMasking` to include `forwardHeaders` in masked config copies.
+  - Updated Config UI: added "Passthrough" option in auth type dropdown with descriptive hint, added "Forward Headers" field in advanced options.
+  - Validation run: `dotnet build` succeeded (0 warnings, 0 errors). `dotnet test` succeeded (53/53 tests passing).
