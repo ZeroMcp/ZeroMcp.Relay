@@ -5,12 +5,12 @@
       "Microsoft.Extensions.Http/10.0.3": {
         "type": "package",
         "compile": {
-          "lib/net10.0/_._": {
+          "lib/net10.0/Microsoft.Extensions.Http.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net10.0/_._": {
+          "lib/net10.0/Microsoft.Extensions.Http.dll": {
             "related": ".xml"
           }
         },
@@ -21,12 +21,12 @@
       "Microsoft.Extensions.Logging.Console/10.0.3": {
         "type": "package",
         "compile": {
-          "lib/net10.0/_._": {
+          "lib/net10.0/Microsoft.Extensions.Logging.Console.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net10.0/_._": {
+          "lib/net10.0/Microsoft.Extensions.Logging.Console.dll": {
             "related": ".xml"
           }
         },
@@ -2392,5 +2392,19 @@
         }
       }
     }
-  }
+  },
+  "logs": [
+    {
+      "code": "NU1510",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "PackageReference Microsoft.Extensions.Http will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary."
+    },
+    {
+      "code": "NU1510",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "PackageReference Microsoft.Extensions.Logging.Console will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary."
+    }
+  ]
 }

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "CSlNybLWR4U=",
+  "dgSpecHash": "A77KLxidR/k=",
   "success": true,
   "projectFilePath": "C:\\Users\\Matt.Anderson\\McpRelay\\ZeroMcp.Relay\\src\\ZeroMcp.Relay\\ZeroMcp.Relay.csproj",
   "expectedPackageFiles": [
@@ -27,10 +27,29 @@
     "C:\\Users\\Matt.Anderson\\.nuget\\packages\\system.io.pipelines\\10.0.3\\system.io.pipelines.10.0.3.nupkg.sha512",
     "C:\\Users\\Matt.Anderson\\.nuget\\packages\\system.text.encodings.web\\10.0.3\\system.text.encodings.web.10.0.3.nupkg.sha512",
     "C:\\Users\\Matt.Anderson\\.nuget\\packages\\system.text.json\\10.0.3\\system.text.json.10.0.3.nupkg.sha512",
-    "C:\\Users\\Matt.Anderson\\.nuget\\packages\\microsoft.netcore.app.ref\\9.0.12\\microsoft.netcore.app.ref.9.0.12.nupkg.sha512",
-    "C:\\Users\\Matt.Anderson\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\9.0.12\\microsoft.windowsdesktop.app.ref.9.0.12.nupkg.sha512",
     "C:\\Users\\Matt.Anderson\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\9.0.12\\microsoft.aspnetcore.app.ref.9.0.12.nupkg.sha512",
-    "C:\\Users\\Matt.Anderson\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\9.0.12\\microsoft.netcore.app.host.win-x64.9.0.12.nupkg.sha512"
+    "C:\\Users\\Matt.Anderson\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\9.0.12\\microsoft.netcore.app.host.win-x64.9.0.12.nupkg.sha512",
+    "C:\\Users\\Matt.Anderson\\.nuget\\packages\\microsoft.netcore.app.ref\\9.0.12\\microsoft.netcore.app.ref.9.0.12.nupkg.sha512",
+    "C:\\Users\\Matt.Anderson\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\9.0.12\\microsoft.windowsdesktop.app.ref.9.0.12.nupkg.sha512"
   ],
-  "logs": []
+  "logs": [
+    {
+      "code": "NU1510",
+      "level": "Warning",
+      "message": "PackageReference Microsoft.Extensions.Http will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary.",
+      "projectPath": "C:\\Users\\Matt.Anderson\\McpRelay\\ZeroMcp.Relay\\src\\ZeroMcp.Relay\\ZeroMcp.Relay.csproj",
+      "warningLevel": 1,
+      "filePath": "C:\\Users\\Matt.Anderson\\McpRelay\\ZeroMcp.Relay\\src\\ZeroMcp.Relay\\ZeroMcp.Relay.csproj",
+      "targetGraphs": []
+    },
+    {
+      "code": "NU1510",
+      "level": "Warning",
+      "message": "PackageReference Microsoft.Extensions.Logging.Console will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary.",
+      "projectPath": "C:\\Users\\Matt.Anderson\\McpRelay\\ZeroMcp.Relay\\src\\ZeroMcp.Relay\\ZeroMcp.Relay.csproj",
+      "warningLevel": 1,
+      "filePath": "C:\\Users\\Matt.Anderson\\McpRelay\\ZeroMcp.Relay\\src\\ZeroMcp.Relay\\ZeroMcp.Relay.csproj",
+      "targetGraphs": []
+    }
+  ]
 }

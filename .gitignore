@@ -1,0 +1,71 @@
+## Ignore Visual Studio user-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+
+## Visual Studio cache and temp files
+.vs/
+.vscode/
+*.vc.db
+*.vc.opendb
+
+## .NET Core
+*.deps.json
+*.runtimeconfig.json
+*.dll
+*.exe
+*.pdb
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+*.nuget.props
+*.nuget.targets
+
+## Azure Functions
+local.settings.json
+
+## Rider / ReSharper
+.idea/
+*.DotSettings.user
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.sln.iml
+
+## Test results
+[Tt]est[Rr]esult*/
+[Tt]est[Rr]esults/
+*.coverage
+*.coveragexml
+
+## Entity Framework
+*_MigrationBackup/
+
+## Logs
+*.log
+
+## OS-specific
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store

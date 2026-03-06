@@ -1,0 +1,59 @@
+{
+  "profiles": {
+    "mcprelay run (http default)": {
+      "commandName": "Project",
+      "commandLineArgs": "run",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "mcprelay run (http ui)": {
+      "commandName": "Project",
+      "commandLineArgs": "run --enable-ui",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "mcprelay run (http lazy)": {
+      "commandName": "Project",
+      "commandLineArgs": "run --lazy",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "mcprelay run (http host port)": {
+      "commandName": "Project",
+      "commandLineArgs": "run --host 0.0.0.0 --port 8080",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "mcprelay run (http config+env)": {
+      "commandName": "Project",
+      "commandLineArgs": "run --config ../../samples/BasicRelay/relay.config.json --env ../../samples/BasicRelay/.env.local",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DEMO_TOKEN": "local-demo-token"
+      }
+    },
+    "mcprelay run (stdio)": {
+      "commandName": "Project",
+      "commandLineArgs": "run --stdio"
+    },
+    "mcprelay run (stdio lazy)": {
+      "commandName": "Project",
+      "commandLineArgs": "run --stdio --lazy"
+    },
+    "mcprelay run (stdio config+env)": {
+      "commandName": "Project",
+      "commandLineArgs": "run --stdio --config ../../samples/BasicRelay/relay.config.json --env ../../samples/BasicRelay/.env.local",
+      "environmentVariables": {
+        "DEMO_TOKEN": "local-demo-token"
+      }
+    },
+    "mcprelay run (stdio ui warning)": {
+      "commandName": "Project",
+      "commandLineArgs": "run --stdio --enable-ui"
+    }
+  }
+}
