@@ -200,6 +200,61 @@
     .tool-info .tool-method { font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 3px; }
     .tool-count-note { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
 
+    /* Tool categories */
+    .tool-category {
+      margin-bottom: 6px;
+    }
+    .tool-category-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s;
+    }
+    .tool-category-header:hover { background: var(--surface-2); }
+    .tool-category-chevron {
+      font-size: 10px;
+      color: var(--text-muted);
+      transition: transform 0.15s;
+      width: 14px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .tool-category.collapsed .tool-category-chevron { transform: rotate(-90deg); }
+    .tool-category-name {
+      font-size: 13px;
+      font-weight: 600;
+      flex: 1;
+    }
+    .tool-category-count {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .tool-category-items {
+      padding-left: 0;
+      margin-top: 4px;
+    }
+    .tool-category.collapsed .tool-category-items { display: none; }
+    .tool-tags {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .tool-tag {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
     /* Modal overlay */
     .modal-backdrop {
       position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100;
@@ -605,6 +660,15 @@
       }
     }
 
+    const NOISE_SEGMENTS = new Set(['api','v1','v2','v3','v4','v5']);
+
+    function extractTags(path) {
+      if (!path) return [];
+      return path.split('/')
+        .filter(s => s && !s.includes('{') && !NOISE_SEGMENTS.has(s.toLowerCase()))
+        .map(s => s.charAt(0).toUpperCase() + s.slice(1));
+    }
+
     function renderTools(tools, enabledCount, totalCount) {
       const note = document.getElementById('toolCountNote');
       if (note) {
@@ -620,21 +684,60 @@
         list.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:12px 0">No tools found.</div>';
         return;
       }
-      list.innerHTML = tools.map((t, i) => `
-        <div class="tool-item ${t.enabled === false ? 'tool-disabled' : ''}" data-tool-idx="${i}">
-          <label class="tool-toggle" onclick="event.stopPropagation()">
-            <input type="checkbox" ${t.enabled !== false ? 'checked' : ''} data-tool-toggle="${i}">
-            <span class="slider"></span>
-          </label>
-          <div class="tool-info">
-            <div class="tool-name">${esc(t.name)}</div>
-            <div class="tool-desc">${esc(t.description || '')}</div>
-            <div class="tool-method">${esc(t.httpMethod)} ${esc(t.path)}</div>
-          </div>
-        </div>
-      `).join('');
-      list.querySelectorAll('.tool-info').forEach((el, i) => {
-        el.addEventListener('click', () => inspectTool(tools[i].name));
+
+      const tagged = tools.map((t, i) => ({ ...t, _idx: i, _tags: extractTags(t.path) }));
+      const groups = new Map();
+      for (const t of tagged) {
+        const cat = t._tags[0] || 'Other';
+        if (!groups.has(cat)) groups.set(cat, []);
+        groups.get(cat).push(t);
+      }
+
+      const sortedKeys = [...groups.keys()].sort((a, b) => {
+        if (a === 'Other') return 1;
+        if (b === 'Other') return -1;
+        return a.localeCompare(b);
+      });
+
+      let html = '';
+      for (const cat of sortedKeys) {
+        const items = groups.get(cat);
+        const enabledInGroup = items.filter(t => t.enabled !== false).length;
+        html += `<div class="tool-category" data-cat="${esc(cat)}">`;
+        html += `<div class="tool-category-header">
+          <span class="tool-category-chevron">&#9662;</span>
+          <span class="tool-category-name">${esc(cat)}</span>
+          <span class="tool-category-count">${enabledInGroup}/${items.length} enabled</span>
+        </div>`;
+        html += `<div class="tool-category-items">`;
+        for (const t of items) {
+          const tags = t._tags.length > 1 ? t._tags.slice(1) : [];
+          html += `
+            <div class="tool-item ${t.enabled === false ? 'tool-disabled' : ''}" data-tool-idx="${t._idx}">
+              <label class="tool-toggle" onclick="event.stopPropagation()">
+                <input type="checkbox" ${t.enabled !== false ? 'checked' : ''} data-tool-toggle="${t._idx}">
+                <span class="slider"></span>
+              </label>
+              <div class="tool-info">
+                <div class="tool-name">${esc(t.name)}</div>
+                <div class="tool-desc">${esc(t.description || '')}</div>
+                <div class="tool-method">${esc(t.httpMethod)} ${esc(t.path)}</div>
+                ${tags.length ? `<div class="tool-tags">${tags.map(tg => `<span class="tool-tag">${esc(tg)}</span>`).join('')}</div>` : ''}
+              </div>
+            </div>`;
+        }
+        html += `</div></div>`;
+      }
+      list.innerHTML = html;
+
+      list.querySelectorAll('.tool-category-header').forEach(hdr => {
+        hdr.addEventListener('click', () => {
+          hdr.parentElement.classList.toggle('collapsed');
+        });
+      });
+      list.querySelectorAll('.tool-info').forEach(el => {
+        const idx = parseInt(el.closest('[data-tool-idx]').dataset.toolIdx);
+        el.addEventListener('click', () => inspectTool(tools[idx].name));
       });
       list.querySelectorAll('[data-tool-toggle]').forEach(cb => {
         cb.addEventListener('change', () => {

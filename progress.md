@@ -132,6 +132,12 @@
   - Updated UI tool list with toggle switches per tool: enabled tools show an active switch, disabled tools are dimmed with an inactive switch.
   - Tool count display updated to show "X of Y tools enabled" format.
   - Mechanism leverages the existing include/exclude glob pattern system — no config schema changes required.
+- Added route-based tool categorisation in the UI:
+  - Tools are grouped into collapsible categories derived from their API route path segments (e.g. `/pet/{id}` → category "Pet", `/store/order/{id}` → "Store" with sub-tag "Order").
+  - Common noise segments (`api`, `v1`–`v5`) are stripped automatically.
+  - Each category header shows the name and enabled/total count; click to collapse/expand.
+  - Sub-path segments beyond the first are shown as tag pills on each tool for additional context.
+  - Pure UI-side change — tags extracted client-side from the path already in the response.
 - Validation run:
   - `dotnet build "ZeroMcp.Relay.slnx" -v minimal` succeeded (0 warnings, 0 errors).
   - `dotnet test "ZeroMcp.Relay.slnx" -v normal` succeeded (53/53 tests passing).
