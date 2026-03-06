@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\ZeroMcp.Relay\ZeroMcp.Relay.csproj" />
+    <ProjectReference Include="..\..\ZeroMcp.Relay\ZeroMcp.Relay.csproj" />
   </ItemGroup>
 
 </Project>

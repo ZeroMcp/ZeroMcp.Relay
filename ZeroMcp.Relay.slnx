@@ -1,7 +1,5 @@
 <Solution>
-  <Folder Name="/src/">
-    <Project Path="src/ZeroMcp.Relay/ZeroMcp.Relay.csproj" />
-  </Folder>
+    <Project Path="ZeroMcp.Relay/ZeroMcp.Relay.csproj" />
   <Folder Name="/tests/">
     <Project Path="tests/ZeroMcp.Relay.Specs/ZeroMcp.Relay.Specs.csproj" />
     <Project Path="tests/ZeroMcp.Relay.Tests/ZeroMcp.Relay.Tests.csproj" />

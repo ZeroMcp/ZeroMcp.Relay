@@ -95,3 +95,9 @@
 - Validation run:
   - `dotnet build "ZeroMcp.Relay.slnx" -v minimal` succeeded.
   - `dotnet test "ZeroMcp.Relay.slnx" -v normal` succeeded (53/53 tests passing).
+- Launch profile updates:
+  - Added `src/ZeroMcp.Relay/Properties/launchSettings.json`.
+  - Added debug profiles covering HTTP and stdio flag combinations (`--enable-ui`, `--lazy`, host/port, config/env overrides, and stdio+UI warning scenario).
+- Repository layout fix:
+  - Disabled parent Git metadata at `C:/Users/Matt.Anderson/McpRelay/.git` by renaming it to `.git.disabled-parent`.
+  - Verified only `C:/Users/Matt.Anderson/McpRelay/ZeroMcp.Relay` is an active Git repository.

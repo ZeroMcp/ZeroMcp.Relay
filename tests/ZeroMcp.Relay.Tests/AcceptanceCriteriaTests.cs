@@ -25,7 +25,7 @@ public sealed class AcceptanceCriteriaTests : IDisposable
     [Fact]
     public void Cli_InstallMetadata_Exists()
     {
-        var csprojPath = Path.Combine(FindRepoRoot(), "src", "ZeroMcp.Relay", "ZeroMcp.Relay.csproj");
+        var csprojPath = Path.Combine(FindRepoRoot(), "ZeroMcp.Relay", "ZeroMcp.Relay.csproj");
         var content = File.ReadAllText(csprojPath);
         Assert.Contains("<PackAsTool>true</PackAsTool>", content);
         Assert.Contains("<ToolCommandName>mcprelay</ToolCommandName>", content);
@@ -1147,7 +1147,7 @@ paths:
     private static async Task<ProcessResult> RunToolProcessAsync(string[] args, string? stdin = null)
     {
         var repoRoot = FindRepoRoot();
-        var projectPath = Path.Combine(repoRoot, "src", "ZeroMcp.Relay", "ZeroMcp.Relay.csproj");
+        var projectPath = Path.Combine(repoRoot, "ZeroMcp.Relay", "ZeroMcp.Relay.csproj");
         var escapedArgs = string.Join(" ", args.Select(EscapeShellArg));
         var startInfo = new ProcessStartInfo
         {
