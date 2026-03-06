@@ -4,11 +4,12 @@
 
 ## Status
 
-This repository is in active bootstrap. The current milestone includes:
-- Solution and project scaffolding
-- .NET tool packaging baseline
-- Initial CLI command tree placeholders
-- Test project setup
+Core v1 implementation is in place, including:
+- CLI (`configure`, `run`, `tools`, `validate --strict`)
+- OpenAPI ingestion (2.0/3.x JSON/YAML) with tool generation
+- MCP transports (HTTP + stdio) and relay dispatch pipeline
+- Optional UI routes gated behind `--enable-ui`
+- Acceptance test coverage and CI pipeline
 
 ## Repository Layout
 
@@ -24,8 +25,23 @@ This repository is in active bootstrap. The current milestone includes:
 dotnet build "ZeroMcp.Relay.slnx" -v normal
 ```
 
-## Run (Current Placeholder)
+## Run
 
 ```powershell
 dotnet run --project "src/ZeroMcp.Relay/ZeroMcp.Relay.csproj" -- --help
+```
+
+## Validate Config (Strict)
+
+```powershell
+dotnet run --project "src/ZeroMcp.Relay/ZeroMcp.Relay.csproj" -- validate --strict --config "samples/BasicRelay/relay.config.json"
+```
+
+## Acceptance Coverage
+
+- Acceptance matrix: `tests/ACCEPTANCE_TEST_MATRIX.md`
+- Full test suite:
+
+```powershell
+dotnet test "ZeroMcp.Relay.slnx" -v normal
 ```

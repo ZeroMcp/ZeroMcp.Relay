@@ -1,0 +1,23 @@
+{
+  "$schema": "https://zeromcp.dev/schemas/relay.config.json",
+  "serverName": "Basic Relay",
+  "serverVersion": "1.0.0",
+  "defaultTimeout": 30,
+  "apis": [
+    {
+      "name": "demo",
+      "source": "https://example.com/openapi.json",
+      "baseUrl": null,
+      "prefix": "demo",
+      "enabled": true,
+      "timeout": 30,
+      "auth": {
+        "type": "bearer",
+        "token": "env:DEMO_TOKEN"
+      },
+      "headers": {},
+      "include": [],
+      "exclude": []
+    }
+  ]
+}

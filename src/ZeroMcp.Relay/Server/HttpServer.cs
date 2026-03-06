@@ -7,6 +7,17 @@ namespace ZeroMcp.Relay.Server;
 
 public sealed class HttpServer(McpRouter router, RelayRuntime runtime, RelayConfigService configService)
 {
+    public static IReadOnlyCollection<string> GetRegisteredRouteTemplates(bool enableUi)
+    {
+        var routes = new List<string> { "/mcp (GET)", "/mcp (POST)", "/mcp/tools", "/health" };
+        if (enableUi)
+        {
+            routes.AddRange(["/", "/ui", "/ui/config", "/ui/apis", "/ui/apis/toggle/{name}", "/ui/apis/test/{name}", "/ui/tools", "/ui/tools/{name}", "/ui/tools/invoke", "/admin/reload"]);
+        }
+
+        return routes;
+    }
+
     public async Task<int> RunAsync(RunOptions options, CancellationToken cancellationToken = default)
     {
         var builder = WebApplication.CreateBuilder();

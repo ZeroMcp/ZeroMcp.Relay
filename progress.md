@@ -67,3 +67,31 @@
   - `dotnet build "ZeroMcp.Relay.slnx" -v detailed` succeeded.
   - `dotnet test "ZeroMcp.Relay.slnx" -v normal` succeeded (7/7 tests passing).
   - CLI smoke test: `configure init --config ./.tmp.relay.config.json` succeeded.
+- Phase 8 started:
+  - Added runtime secret validation gating so unresolved required secrets disable APIs (`error` state) and fail fast in stdio mode.
+  - Added correlation-id dispatch logging for MCP tool calls to stderr.
+  - Added disabled API status representation in runtime health/status model.
+- Phase 9 started:
+  - Added acceptance criteria test suite with explicit checklist coverage (`AcceptanceCriteriaTests`).
+  - Added serial test collection guard for console/stdio tests.
+  - Added sample relay config files for `BasicRelay` and `MultiApiRelay`.
+  - Added CI workflow (`.github/workflows/ci.yml`) for build/test/strict validate.
+- Additional hardening and completion:
+  - `configure remove` now requires confirmation unless `--yes` is provided.
+  - `configure list` now includes per-API generated tool counts.
+  - Added `EnvFileLoader` utility and wired run command to it.
+  - Added stdio startup JSON-RPC error output on initialization failure.
+  - Added OpenAPI 3.1 compatibility fallback by normalizing 3.1 declarations to 3.0 parsing semantics.
+  - Added retry handling in config save atomic rename path for transient Windows file locks.
+  - Updated project `README.md` to reflect completed v1 capability set, strict validate usage, and acceptance coverage references.
+- Validation run:
+  - `dotnet build "ZeroMcp.Relay.slnx" -v detailed` succeeded.
+  - `dotnet test "ZeroMcp.Relay.slnx" -v normal` succeeded (41/41 tests passing).
+  - Added acceptance coverage matrix at `tests/ACCEPTANCE_TEST_MATRIX.md`.
+- Acceptance coverage expansion:
+  - Added explicit tests for remaining `spec.md` acceptance items: configure remove confirmation, outbound auth+URL mapping, UI test/browse/inspect/invoke/masking paths, stdio `--enable-ui` warning and startup failure JSON-RPC behavior, duplicate-prefix startup failure, and missing-env warning checks.
+  - Updated `tests/ACCEPTANCE_TEST_MATRIX.md` with complete acceptance mapping.
+  - Added process-based stdio acceptance validation helper and net10.0 run path for CLI/stdin integration checks.
+- Validation run:
+  - `dotnet build "ZeroMcp.Relay.slnx" -v minimal` succeeded.
+  - `dotnet test "ZeroMcp.Relay.slnx" -v normal` succeeded (53/53 tests passing).

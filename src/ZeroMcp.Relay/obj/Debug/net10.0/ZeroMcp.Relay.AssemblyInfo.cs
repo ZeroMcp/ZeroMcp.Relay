@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("Standalone OpenAPI to MCP relay tool.")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("0.1.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.1.0+8b0a779b152422d02174b2023bb8143165a2c0af")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.1.0+b2d09731848c9f30f84b9906c85268d66e72eac1")]
 [assembly: System.Reflection.AssemblyProductAttribute("ZeroMcp.Relay")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ZeroMcp.Relay")]
 [assembly: System.Reflection.AssemblyVersionAttribute("0.1.0.0")]

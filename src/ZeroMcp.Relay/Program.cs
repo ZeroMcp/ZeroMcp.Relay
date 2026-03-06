@@ -53,7 +53,7 @@ static async Task<int> RunCommandAsync(string[] runArgs)
     var options = RunOptionsParser.Parse(runArgs);
     if (!string.IsNullOrWhiteSpace(options.EnvPath))
     {
-        LoadEnvFile(options.EnvPath);
+        EnvFileLoader.Load(options.EnvPath);
     }
 
     if (options.Stdio && options.EnableUi)
@@ -65,12 +65,30 @@ static async Task<int> RunCommandAsync(string[] runArgs)
     var runtime = provider.GetRequiredService<RelayRuntime>();
     var failFast = options.Stdio;
 
-    await runtime.InitializeAsync(
-        options.ConfigPath,
-        options.ValidateOnStart,
-        options.Lazy,
-        failFast,
-        CancellationToken.None);
+    try
+    {
+        await runtime.InitializeAsync(
+            options.ConfigPath,
+            options.ValidateOnStart,
+            options.Lazy,
+            failFast,
+            CancellationToken.None);
+    }
+    catch (Exception ex) when (options.Stdio)
+    {
+        var jsonRpcError = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            jsonrpc = "2.0",
+            id = (object?)null,
+            error = new
+            {
+                code = -32000,
+                message = ex.Message
+            }
+        });
+        await Console.Out.WriteLineAsync(jsonRpcError);
+        return 1;
+    }
 
     if (options.Stdio)
     {
@@ -142,28 +160,4 @@ static ServiceProvider BuildServices()
     services.AddSingleton<HttpServer>();
     services.AddSingleton<CliCommandHost>();
     return services.BuildServiceProvider();
-}
-
-static void LoadEnvFile(string envPath)
-{
-    var absolute = Path.GetFullPath(envPath);
-    if (!File.Exists(absolute))
-    {
-        throw new InvalidOperationException($"Env file '{absolute}' does not exist.");
-    }
-
-    foreach (var rawLine in File.ReadAllLines(absolute))
-    {
-        var line = rawLine.Trim();
-        if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#'))
-        {
-            continue;
-        }
-
-        var split = line.Split('=', 2, StringSplitOptions.TrimEntries);
-        if (split.Length == 2 && !string.IsNullOrWhiteSpace(split[0]))
-        {
-            Environment.SetEnvironmentVariable(split[0], split[1]);
-        }
-    }
 }

@@ -36,6 +36,17 @@ public sealed class RelayRuntime(
         _apiStates.Clear();
         _toolBindings.Clear();
 
+        foreach (var disabledApi in _config.Apis.Where(api => !api.Enabled))
+        {
+            _apiStates[disabledApi.Name] = new LoadedApiState
+            {
+                Api = disabledApi,
+                Document = new OpenApiDocument(),
+                Tools = [],
+                Status = "disabled"
+            };
+        }
+
         if (lazy)
         {
             foreach (var api in _config.Apis.Where(api => api.Enabled))
@@ -69,6 +80,12 @@ public sealed class RelayRuntime(
 
             try
             {
+                var secretValidation = configService.ValidateApiSecrets(api);
+                if (!secretValidation.IsValid)
+                {
+                    throw new InvalidOperationException($"Secret resolution failed: {secretValidation.Error}");
+                }
+
                 var loaded = await specCache.GetOrLoadAsync(api, false, cancellationToken);
                 if (!loaded.IsSuccess && validateOnStart)
                 {
@@ -121,6 +138,14 @@ public sealed class RelayRuntime(
         }
 
         var api = state.Api;
+        var secretValidation = configService.ValidateApiSecrets(api);
+        if (!secretValidation.IsValid)
+        {
+            state.Status = "error";
+            state.Error = $"Secret resolution failed: {secretValidation.Error}";
+            return;
+        }
+
         var loaded = await specCache.GetOrLoadAsync(api, false, cancellationToken);
         if (!loaded.IsSuccess)
         {
@@ -188,11 +213,14 @@ public sealed class RelayRuntime(
             })
             .ToList();
 
-        var status = apis.Count == 0 || apis.All(api => api.status == "error")
-            ? "error"
-            : apis.Any(api => api.status == "error" || api.status == "degraded")
-                ? "degraded"
-                : "ok";
+        var enabledApis = apis.Where(api => api.status != "disabled").ToList();
+        var status = enabledApis.Count == 0
+            ? "ok"
+            : enabledApis.All(api => api.status == "error")
+                ? "error"
+                : enabledApis.Any(api => api.status == "error" || api.status == "degraded")
+                    ? "degraded"
+                    : "ok";
 
         return new
         {

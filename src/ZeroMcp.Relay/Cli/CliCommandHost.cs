@@ -159,6 +159,20 @@ public sealed class CliCommandHost(IServiceProvider serviceProvider)
         var name = RequireOption(options, "-n", "--name");
         var configPath = GetSingle(options, "--config");
         var config = await _configService.LoadAsync(configPath);
+        var confirmed = options.ContainsKey("--yes");
+        if (!confirmed)
+        {
+            Console.Write($"Remove API '{name}'? (y/N): ");
+            var input = (Console.ReadLine() ?? string.Empty).Trim();
+            confirmed = input.Equals("y", StringComparison.OrdinalIgnoreCase) || input.Equals("yes", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (!confirmed)
+        {
+            Console.WriteLine("Cancelled.");
+            return 1;
+        }
+
         var removed = config.Apis.RemoveAll(api => api.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         if (removed == 0)
         {
@@ -174,11 +188,29 @@ public sealed class CliCommandHost(IServiceProvider serviceProvider)
     private async Task<int> ConfigureListAsync(Dictionary<string, List<string>> options)
     {
         var config = await _configService.LoadAsync(GetSingle(options, "--config"));
-        Console.WriteLine("NAME       AUTH         ENABLED SOURCE");
+        Console.WriteLine("NAME       AUTH         ENABLED TOOLS SOURCE");
         foreach (var api in config.Apis.OrderBy(api => api.Name, StringComparer.OrdinalIgnoreCase))
         {
             var auth = api.Auth?.Type ?? "none";
-            Console.WriteLine($"{api.Name,-10} {auth,-12} {(api.Enabled ? "yes" : "no"),-7} {api.Source}");
+            var toolCount = 0;
+            if (api.Enabled)
+            {
+                try
+                {
+                    var load = await _loader.LoadAsync(api.Source);
+                    if (load.IsSuccess)
+                    {
+                        var generator = serviceProvider.GetRequiredService<OpenApiToolGenerator>();
+                        toolCount = generator.Generate(api, load.Document).Tools.Count;
+                    }
+                }
+                catch
+                {
+                    toolCount = 0;
+                }
+            }
+
+            Console.WriteLine($"{api.Name,-10} {auth,-12} {(api.Enabled ? "yes" : "no"),-7} {toolCount,-5} {api.Source}");
         }
 
         return 0;

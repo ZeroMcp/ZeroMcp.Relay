@@ -1,5 +1,6 @@
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
+using Microsoft.OpenApi.Readers.Exceptions;
 
 namespace ZeroMcp.Relay.Ingestion;
 
@@ -9,7 +10,20 @@ public sealed class OpenApiSourceLoader(HttpClient httpClient)
     {
         var content = await LoadSourceContentAsync(source, cancellationToken);
         var reader = new OpenApiStringReader();
-        var document = reader.Read(content, out var diagnostic);
+        OpenApiDocument? document;
+        OpenApiDiagnostic diagnostic;
+        try
+        {
+            document = reader.Read(content, out diagnostic);
+        }
+        catch (OpenApiUnsupportedSpecVersionException)
+        {
+            // Microsoft.OpenApi.Readers currently has limited 3.1 support.
+            // For v1 relay behavior, we fall back to 3.0 parsing semantics.
+            var normalized = content.Replace("\"openapi\": \"3.1.0\"", "\"openapi\": \"3.0.3\"", StringComparison.OrdinalIgnoreCase)
+                .Replace("openapi: 3.1.0", "openapi: 3.0.3", StringComparison.OrdinalIgnoreCase);
+            document = reader.Read(normalized, out diagnostic);
+        }
 
         var result = new OpenApiLoadResult
         {

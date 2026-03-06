@@ -6,6 +6,7 @@ public sealed class McpRouter(RelayRuntime runtime)
 {
     public async Task<object> HandleAsync(JsonElement request, CancellationToken cancellationToken = default)
     {
+        var correlationId = Guid.NewGuid().ToString("n");
         var id = request.TryGetProperty("id", out var requestId) ? requestId : default;
         var method = request.TryGetProperty("method", out var methodNode) ? methodNode.GetString() : null;
 
@@ -28,7 +29,7 @@ public sealed class McpRouter(RelayRuntime runtime)
                     }
                 }),
                 "tools/list" => await HandleToolsListAsync(id, cancellationToken),
-                "tools/call" => await HandleToolCallAsync(id, request, cancellationToken),
+                "tools/call" => await HandleToolCallAsync(id, request, correlationId, cancellationToken),
                 _ => BuildError(id, -32601, $"Method '{method}' not found.")
             };
         }
@@ -52,7 +53,7 @@ public sealed class McpRouter(RelayRuntime runtime)
         return BuildSuccess(id, new { tools });
     }
 
-    private async Task<object> HandleToolCallAsync(JsonElement id, JsonElement request, CancellationToken cancellationToken)
+    private async Task<object> HandleToolCallAsync(JsonElement id, JsonElement request, string correlationId, CancellationToken cancellationToken)
     {
         if (!request.TryGetProperty("params", out var parameters))
         {
@@ -76,7 +77,9 @@ public sealed class McpRouter(RelayRuntime runtime)
             arguments = argsNode;
         }
 
+        await Console.Error.WriteLineAsync($"correlation={correlationId} tool={toolName} event=dispatch_start");
         var dispatchResult = await runtime.DispatchAsync(toolName, arguments, cancellationToken);
+        await Console.Error.WriteLineAsync($"correlation={correlationId} tool={toolName} event=dispatch_complete status={(dispatchResult.StatusCode?.ToString() ?? "n/a")} isError={dispatchResult.IsError}");
         return BuildSuccess(id, new
         {
             content = new[]

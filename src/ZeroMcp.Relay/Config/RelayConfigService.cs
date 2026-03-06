@@ -59,7 +59,25 @@ public sealed class RelayConfigService(ISecretResolver secretResolver)
             await JsonSerializer.SerializeAsync(stream, config, JsonOptions, cancellationToken);
         }
 
-        File.Move(tempPath, path, overwrite: true);
+        var retries = 5;
+        while (true)
+        {
+            try
+            {
+                File.Move(tempPath, path, overwrite: true);
+                break;
+            }
+            catch (UnauthorizedAccessException) when (retries > 0)
+            {
+                retries--;
+                await Task.Delay(50, cancellationToken);
+            }
+            catch (IOException) when (retries > 0)
+            {
+                retries--;
+                await Task.Delay(50, cancellationToken);
+            }
+        }
     }
 
     public RelayConfig CreateDefault()
@@ -185,5 +203,34 @@ public sealed class RelayConfigService(ISecretResolver secretResolver)
         {
             result.AddWarning("secret_unresolved", resolved.Error ?? "Secret could not be resolved.", apiName);
         }
+    }
+
+    public (bool IsValid, string? Error) ValidateApiSecrets(ApiConfig api)
+    {
+        if (api.Auth is null)
+        {
+            return (true, null);
+        }
+
+        var authType = api.Auth.Type.Trim().ToLowerInvariant();
+        var requiredSecrets = authType switch
+        {
+            "bearer" => new[] { api.Auth.Token },
+            "apikey" => new[] { api.Auth.Value },
+            "apikey-query" => new[] { api.Auth.Value },
+            "basic" => new[] { api.Auth.Password },
+            _ => Array.Empty<string?>()
+        };
+
+        foreach (var secret in requiredSecrets.Where(s => !string.IsNullOrWhiteSpace(s)))
+        {
+            var resolved = secretResolver.Resolve(secret);
+            if (!resolved.IsResolved)
+            {
+                return (false, resolved.Error ?? "Secret could not be resolved.");
+            }
+        }
+
+        return (true, null);
     }
 }

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://zeromcp.dev/schemas/relay.config.json",
+  "serverName": "Multi API Relay",
+  "serverVersion": "1.0.0",
+  "defaultTimeout": 30,
+  "apis": [
+    {
+      "name": "stripe",
+      "source": "https://example.com/stripe-openapi.json",
+      "baseUrl": null,
+      "prefix": "stripe",
+      "enabled": true,
+      "timeout": 30,
+      "auth": {
+        "type": "bearer",
+        "token": "env:STRIPE_SECRET_KEY"
+      },
+      "headers": {},
+      "include": [
+        "stripe_charge_*",
+        "stripe_customer_*"
+      ],
+      "exclude": [
+        "stripe_*_test_*"
+      ]
+    },
+    {
+      "name": "crm",
+      "source": "https://example.com/crm-openapi.json",
+      "baseUrl": null,
+      "prefix": "crm",
+      "enabled": true,
+      "timeout": 30,
+      "auth": {
+        "type": "apikey",
+        "header": "X-Api-Key",
+        "value": "env:CRM_API_KEY"
+      },
+      "headers": {
+        "X-Tenant-Id": "acme"
+      },
+      "include": [],
+      "exclude": []
+    }
+  ]
+}
