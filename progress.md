@@ -138,6 +138,11 @@
   - Each category header shows the name and enabled/total count; click to collapse/expand.
   - Sub-path segments beyond the first are shown as tag pills on each tool for additional context.
   - Pure UI-side change — tags extracted client-side from the path already in the response.
-- Validation run:
-  - `dotnet build "ZeroMcp.Relay.slnx" -v minimal` succeeded (0 warnings, 0 errors).
-  - `dotnet test "ZeroMcp.Relay.slnx" -v normal` succeeded (53/53 tests passing).
+- Added NuGet publish job to CI pipeline (`.github/workflows/ci.yml`):
+  - Triggers on tags matching `v*` (e.g. `v0.1.0`, `v1.0.0`).
+  - Extracts version from the tag (strips the `v` prefix) and passes it to `dotnet pack -p:Version=`.
+  - Pushes to NuGet.org (requires `NUGET_API_KEY` secret) and GitHub Packages.
+  - Publish job runs only after build-test-validate succeeds.
+  - Uses `--skip-duplicate` to safely re-run without failure.
+- Fixed `dotnet pack` failure: corrected README path in `ZeroMcp.Relay.csproj` from `..\..\README.md` to `..\README.md` (README is one level up at repo root, not two).
+- Updated CI triggers: removed `push: branches: [main]` so the build-test-validate job only runs on pull requests (pre-merge check) and tag pushes (for publish), not redundantly on every merge to main.
