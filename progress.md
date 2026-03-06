@@ -126,3 +126,12 @@
 - Fixed CI pipeline: corrected stale `src/ZeroMcp.Relay/` project path to `ZeroMcp.Relay/` in `.github/workflows/ci.yml`.
 - Fixed CI validate step: replaced placeholder `https://example.com/openapi.json` in `samples/BasicRelay/relay.config.json` with the real Petstore spec URL (`https://petstore3.swagger.io/api/v3/openapi.json`) and switched auth to `none` so the sample can be validated without dummy env vars.
 - Removed `--strict` from CI sample validation — Petstore spec has circular `$ref` references which are correctly handled (broken with open `{}` schema) but promoted to errors by `--strict`. Without `--strict`, validation passes (exit 0) and warnings are still reported.
+- Added per-tool enable/disable toggle in the Config UI:
+  - New `GET /ui/apis/{name}/all-tools` endpoint: generates the full tool list for an API (with include filters applied but exclude removed), marks each tool as enabled/disabled based on current exclude patterns.
+  - New `POST /ui/apis/{name}/tools/{toolName}/toggle` endpoint: adds/removes a tool's exact name from the API's `exclude` list in the config, then saves and reloads.
+  - Updated UI tool list with toggle switches per tool: enabled tools show an active switch, disabled tools are dimmed with an inactive switch.
+  - Tool count display updated to show "X of Y tools enabled" format.
+  - Mechanism leverages the existing include/exclude glob pattern system — no config schema changes required.
+- Validation run:
+  - `dotnet build "ZeroMcp.Relay.slnx" -v minimal` succeeded (0 warnings, 0 errors).
+  - `dotnet test "ZeroMcp.Relay.slnx" -v normal` succeeded (53/53 tests passing).
