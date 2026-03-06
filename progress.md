@@ -122,3 +122,5 @@
 - Validation run:
   - `dotnet build "ZeroMcp.Relay.slnx" -v minimal` succeeded (0 warnings, 0 errors).
   - `dotnet test "ZeroMcp.Relay.slnx" -v normal` succeeded (53/53 tests passing).
+- Rewrote `README.md` with full usage instructions covering installation, quick start, complete CLI reference, configuration schema, authentication models, HTTP server mode, config UI, stdio mode, OpenAPI ingestion, tool generation, deployment patterns (stdio/Docker/CI), and development guide.
+- Fixed CI pipeline: corrected stale `src/ZeroMcp.Relay/` project path to `ZeroMcp.Relay/` in `.github/workflows/ci.yml`.
