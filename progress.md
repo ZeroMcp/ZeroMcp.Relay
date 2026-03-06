@@ -144,3 +144,5 @@
   - Pushes to NuGet.org (requires `NUGET_API_KEY` secret) and GitHub Packages.
   - Publish job runs only after build-test-validate succeeds.
   - Uses `--skip-duplicate` to safely re-run without failure.
+- Fixed `dotnet pack` failure: corrected README path in `ZeroMcp.Relay.csproj` from `..\..\README.md` to `..\README.md` (README is one level up at repo root, not two).
+- Updated CI triggers: removed `push: branches: [main]` so the build-test-validate job only runs on pull requests (pre-merge check) and tag pushes (for publish), not redundantly on every merge to main.
