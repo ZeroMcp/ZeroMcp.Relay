@@ -26,7 +26,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Ui\index.html" LogicalName="ZeroMcp.Relay.Ui.index.html" />
   </ItemGroup>
 
 </Project>
