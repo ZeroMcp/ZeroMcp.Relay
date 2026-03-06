@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ZeroMcp.Relay.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ff518e941ef4e0e0ed527eff3045028a74581d9e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+811815ef93bba20f3035364be0e2243afee4b89a")]
 [assembly: System.Reflection.AssemblyProductAttribute("ZeroMcp.Relay.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ZeroMcp.Relay.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
