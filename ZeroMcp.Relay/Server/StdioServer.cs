@@ -22,7 +22,7 @@ public sealed class StdioServer(McpRouter router)
             try
             {
                 using var document = JsonDocument.Parse(line);
-                var response = await router.HandleAsync(document.RootElement, cancellationToken);
+                var response = await router.HandleAsync(document.RootElement, inboundHeaders: null, cancellationToken);
                 await Console.Out.WriteLineAsync(JsonSerializer.Serialize(response));
                 await Console.Out.FlushAsync();
             }

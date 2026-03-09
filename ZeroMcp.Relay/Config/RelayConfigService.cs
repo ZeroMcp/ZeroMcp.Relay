@@ -156,6 +156,7 @@ public sealed class RelayConfigService(ISecretResolver secretResolver)
         switch (type)
         {
             case "none":
+            case "passthrough":
                 return;
             case "bearer":
                 ValidateSecret(api.Auth.Token, api.Name, "bearer_token_missing", "Bearer token is required.", result);
@@ -213,6 +214,11 @@ public sealed class RelayConfigService(ISecretResolver secretResolver)
         }
 
         var authType = api.Auth.Type.Trim().ToLowerInvariant();
+        if (authType is "none" or "passthrough")
+        {
+            return (true, null);
+        }
+
         var requiredSecrets = authType switch
         {
             "bearer" => new[] { api.Auth.Token },

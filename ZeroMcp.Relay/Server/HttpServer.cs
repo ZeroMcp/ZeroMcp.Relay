@@ -57,7 +57,8 @@ public sealed class HttpServer(
         app.MapPost("/mcp", async context =>
         {
             using var request = await JsonDocument.ParseAsync(context.Request.Body, cancellationToken: cancellationToken);
-            var response = await router.HandleAsync(request.RootElement, cancellationToken);
+            var inboundHeaders = ExtractInboundHeaders(context);
+            var response = await router.HandleAsync(request.RootElement, inboundHeaders, cancellationToken);
             context.Response.ContentType = "application/json";
             await context.Response.WriteAsync(JsonSerializer.Serialize(response), cancellationToken);
         });
@@ -345,7 +346,8 @@ public sealed class HttpServer(
                     args = argNode;
                 }
 
-                var result = await runtime.DispatchAsync(toolName ?? string.Empty, args, cancellationToken);
+                var inboundHeaders = ExtractInboundHeaders(context);
+                var result = await runtime.DispatchAsync(toolName ?? string.Empty, args, inboundHeaders, cancellationToken);
                 return Results.Json(result);
             });
             app.MapPost("/admin/reload", async () =>
@@ -357,6 +359,18 @@ public sealed class HttpServer(
 
         await app.RunAsync();
         return 0;
+    }
+
+    private static IReadOnlyDictionary<string, string[]> ExtractInboundHeaders(HttpContext context)
+    {
+        var headers = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+        foreach (var header in context.Request.Headers)
+        {
+            var values = header.Value.ToArray();
+            headers[header.Key] = Array.ConvertAll(values, v => v ?? string.Empty);
+        }
+
+        return headers;
     }
 
     private static ApiConfig DeserializeApiConfig(JsonElement root)
@@ -396,6 +410,14 @@ public sealed class HttpServer(
             {
                 config.Headers[prop.Name] = prop.Value.GetString() ?? "";
             }
+        }
+
+        if (root.TryGetProperty("forwardHeaders", out var fh) && fh.ValueKind == JsonValueKind.Array)
+        {
+            config.ForwardHeaders = fh.EnumerateArray()
+                .Select(e => e.GetString() ?? "")
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .ToList();
         }
 
         if (root.TryGetProperty("include", out var inc) && inc.ValueKind == JsonValueKind.Array)

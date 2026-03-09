@@ -163,7 +163,11 @@ public sealed class RelayRuntime(
         IndexToolBindings(state);
     }
 
-    public async Task<RelayDispatchResult> DispatchAsync(string toolName, System.Text.Json.JsonElement? args, CancellationToken cancellationToken = default)
+    public async Task<RelayDispatchResult> DispatchAsync(
+        string toolName,
+        System.Text.Json.JsonElement? args,
+        IReadOnlyDictionary<string, string[]>? inboundHeaders = null,
+        CancellationToken cancellationToken = default)
     {
         if (!_toolBindings.TryGetValue(toolName, out var binding))
         {
@@ -197,7 +201,7 @@ public sealed class RelayRuntime(
         }
 
         var timeout = binding.Api.Timeout ?? _config.DefaultTimeout;
-        return await dispatcher.DispatchAsync(binding.Api, binding.Tool, operation, baseUrl, args, timeout, cancellationToken);
+        return await dispatcher.DispatchAsync(binding.Api, binding.Tool, operation, baseUrl, args, timeout, inboundHeaders, cancellationToken);
     }
 
     public object BuildHealthResponse()

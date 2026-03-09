@@ -15,6 +15,7 @@ public sealed class RelayDispatcher(ISecretResolver secretResolver)
         string baseUrl,
         JsonElement? arguments,
         int timeoutSeconds,
+        IReadOnlyDictionary<string, string[]>? inboundHeaders = null,
         CancellationToken cancellationToken = default)
     {
         using var client = new HttpClient
@@ -29,7 +30,8 @@ public sealed class RelayDispatcher(ISecretResolver secretResolver)
         ApplyBody(operation, arguments, request);
 
         var authSecret = ResolveAuthSecret(api);
-        request.RequestUri = ApiAuthApplicator.ApplyAuth(api, request, requestUri, authSecret);
+        request.RequestUri = ApiAuthApplicator.ApplyAuth(api, request, requestUri, authSecret, inboundHeaders);
+        ApplyForwardedHeaders(api, request, inboundHeaders);
 
         try
         {
@@ -150,6 +152,27 @@ public sealed class RelayDispatcher(ISecretResolver secretResolver)
         }
 
         request.Content = new StringContent(JsonSerializer.Serialize(bodyObject), Encoding.UTF8, "application/json");
+    }
+
+    private static void ApplyForwardedHeaders(ApiConfig api, HttpRequestMessage request, IReadOnlyDictionary<string, string[]>? inboundHeaders)
+    {
+        if (inboundHeaders is null || api.ForwardHeaders.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var headerName in api.ForwardHeaders)
+        {
+            if (string.Equals(headerName, "Authorization", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (inboundHeaders.TryGetValue(headerName, out var values))
+            {
+                request.Headers.TryAddWithoutValidation(headerName, values);
+            }
+        }
     }
 
     private string? ResolveAuthSecret(ApiConfig api)

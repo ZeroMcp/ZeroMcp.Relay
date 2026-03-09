@@ -25,6 +25,7 @@ public static class ConfigMasking
             Enabled = source.Enabled,
             Timeout = source.Timeout,
             Headers = new Dictionary<string, string>(source.Headers, StringComparer.OrdinalIgnoreCase),
+            ForwardHeaders = [.. source.ForwardHeaders],
             Include = [.. source.Include],
             Exclude = [.. source.Exclude],
             Auth = source.Auth is null

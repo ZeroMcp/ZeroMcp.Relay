@@ -4,7 +4,10 @@ namespace ZeroMcp.Relay.Server;
 
 public sealed class McpRouter(RelayRuntime runtime)
 {
-    public async Task<object> HandleAsync(JsonElement request, CancellationToken cancellationToken = default)
+    public async Task<object> HandleAsync(
+        JsonElement request,
+        IReadOnlyDictionary<string, string[]>? inboundHeaders = null,
+        CancellationToken cancellationToken = default)
     {
         var correlationId = Guid.NewGuid().ToString("n");
         var id = request.TryGetProperty("id", out var requestId) ? requestId : default;
@@ -29,7 +32,7 @@ public sealed class McpRouter(RelayRuntime runtime)
                     }
                 }),
                 "tools/list" => await HandleToolsListAsync(id, cancellationToken),
-                "tools/call" => await HandleToolCallAsync(id, request, correlationId, cancellationToken),
+                "tools/call" => await HandleToolCallAsync(id, request, correlationId, inboundHeaders, cancellationToken),
                 _ => BuildError(id, -32601, $"Method '{method}' not found.")
             };
         }
@@ -53,7 +56,12 @@ public sealed class McpRouter(RelayRuntime runtime)
         return BuildSuccess(id, new { tools });
     }
 
-    private async Task<object> HandleToolCallAsync(JsonElement id, JsonElement request, string correlationId, CancellationToken cancellationToken)
+    private async Task<object> HandleToolCallAsync(
+        JsonElement id,
+        JsonElement request,
+        string correlationId,
+        IReadOnlyDictionary<string, string[]>? inboundHeaders,
+        CancellationToken cancellationToken)
     {
         if (!request.TryGetProperty("params", out var parameters))
         {
@@ -78,7 +86,7 @@ public sealed class McpRouter(RelayRuntime runtime)
         }
 
         await Console.Error.WriteLineAsync($"correlation={correlationId} tool={toolName} event=dispatch_start");
-        var dispatchResult = await runtime.DispatchAsync(toolName, arguments, cancellationToken);
+        var dispatchResult = await runtime.DispatchAsync(toolName, arguments, inboundHeaders, cancellationToken);
         await Console.Error.WriteLineAsync($"correlation={correlationId} tool={toolName} event=dispatch_complete status={(dispatchResult.StatusCode?.ToString() ?? "n/a")} isError={dispatchResult.IsError}");
         return BuildSuccess(id, new
         {

@@ -102,11 +102,12 @@ Scaffolds a `relay.config.json` in the current directory. Safe to run in an exis
 mcprelay configure add
   -n, --name         <string>   Required. Short identifier (e.g. "stripe")
   -s, --source       <url>      Required. OpenAPI/Swagger spec URL
+      --passthrough             Forward inbound Authorization header (SAML, Bearer, etc.)
+  -b, --bearer       <value>    Bearer token or env var reference
   -k, --api-key      <value>    API key value or env var reference (e.g. env:STRIPE_KEY)
   -h, --header       <k=v>      Custom header (repeatable)
   -u, --username     <string>   Basic auth username
   -p, --password     <value>    Basic auth password or env var reference
-  -b, --bearer       <value>    Bearer token or env var reference
       --prefix       <string>   Tool name prefix override (default: name)
       --timeout      <seconds>  Per-request timeout in seconds (default: 30)
       --disabled                Add the API but disable it immediately
@@ -272,6 +273,7 @@ Configuration lives in `relay.config.json`. The config file path is resolved in 
         "token": "env:STRIPE_SECRET_KEY"
       },
       "headers": {},
+      "forwardHeaders": [],
       "include": [],
       "exclude": ["test_helpers.*", "radar.*"]
     },
@@ -283,13 +285,10 @@ Configuration lives in `relay.config.json`. The config file path is resolved in 
       "enabled": true,
       "timeout": 30,
       "auth": {
-        "type": "apikey",
-        "header": "X-Api-Key",
-        "value": "env:CRM_API_KEY"
+        "type": "passthrough"
       },
-      "headers": {
-        "X-Tenant-Id": "acme"
-      },
+      "headers": {},
+      "forwardHeaders": ["X-Tenant-Id", "X-Correlation-Id"],
       "include": [],
       "exclude": []
     }
@@ -370,6 +369,39 @@ Adds `Authorization: Basic {base64(username:password)}`.
 ```json
 { "auth": { "type": "basic", "username": "myuser", "password": "env:MY_PASSWORD" } }
 ```
+
+### Passthrough
+
+Forwards the `Authorization` header from the inbound HTTP request directly to the
+outbound API call. Supports Bearer tokens, SAML assertions, and any other auth scheme
+present in the incoming request. No secrets are configured — the relay simply passes
+through whatever credentials the caller provides.
+
+```json
+{ "auth": { "type": "passthrough" } }
+```
+
+This is useful when the relay sits behind an identity provider or gateway that has
+already authenticated the caller, and the downstream API expects the same credentials.
+
+### Header Forwarding
+
+In addition to auth passthrough, you can forward arbitrary headers from the inbound
+request to the outbound API call using `forwardHeaders`. This works with any auth type.
+
+```json
+{
+  "name": "my-api",
+  "source": "https://example.com/openapi.json",
+  "auth": { "type": "passthrough" },
+  "forwardHeaders": ["X-Correlation-Id", "X-Tenant-Id", "X-Request-Id"]
+}
+```
+
+The `Authorization` header is handled by the auth type (e.g. `passthrough`), so it
+does not need to be listed in `forwardHeaders`. Headers listed in `forwardHeaders`
+are only forwarded when the relay is running in HTTP server mode — stdio mode has no
+inbound HTTP headers.
 
 ---
 
