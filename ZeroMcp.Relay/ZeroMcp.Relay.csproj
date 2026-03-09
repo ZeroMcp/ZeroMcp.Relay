@@ -12,6 +12,8 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>mcprelay</ToolCommandName>
+    <PackageProjectUrl>https://github.com/ZeroMCP/ZeroMCP.Relay</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ZeroMCP/ZeroMCP.Relay</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
