@@ -25,6 +25,7 @@ Both expose tools through the same MCP protocol and can be used side-by-side.
 - [stdio Mode](#stdio-mode)
 - [OpenAPI Ingestion](#openapi-ingestion)
 - [Tool Generation](#tool-generation)
+- [Docker](#docker)
 - [Deployment Patterns](#deployment-patterns)
 - [Development](#development)
 
@@ -646,6 +647,74 @@ Duplicate prefixes cause a startup error with a clear message.
 
 ---
 
+## Docker
+
+The repository ships a multi-stage `Dockerfile` that builds and runs the relay as an HTTP server. Images are multi-arch: **linux/amd64** and **linux/arm64** are both supported (the CI workflow `.github/workflows/docker.yml` publishes both to GHCR).
+
+### Quick Start
+
+```bash
+# Build for your local architecture
+docker build -t zeromcp/relay .
+
+# Production mode (default): MCP endpoints only, no UI
+docker run -p 8080:8080 -v "$(pwd)/config:/config" zeromcp/relay
+
+# Dev mode: config UI enabled at http://localhost:8080/ui
+docker run -p 8080:8080 -v "$(pwd)/config:/config" \
+  -e MCPRELAY_MODE=dev \
+  zeromcp/relay
+```
+
+The container reads its config from `/config/relay.config.json` (mount a directory at `/config`; a directory mount keeps the UI's atomic config saves working). If no config exists yet, start in dev mode and add APIs through the UI — the file is created on save.
+
+### Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `MCPRELAY_MODE` | `prod` | `dev` (or `development`) enables the config UI at `/ui`; `prod` (or `production`) runs MCP endpoints only. Unknown values fall back to `prod`. |
+| `MCPRELAY_HOST` | `0.0.0.0` | Bind address inside the container. |
+| `MCPRELAY_PORT` | `8080` | Listen port inside the container. |
+| `MCPRELAY_CONFIG` | `/config/relay.config.json` | Config file path inside the container. |
+
+Secret references in the config (`env:VAR_NAME`) resolve from the container environment, so pass API credentials with `-e`:
+
+```bash
+docker run -p 8080:8080 -v "$(pwd)/config:/config" \
+  -e STRIPE_SECRET_KEY=sk_live_... \
+  zeromcp/relay
+```
+
+Extra arguments after the image name are appended to `mcprelay run` (e.g. `docker run zeromcp/relay --lazy`).
+
+### Docker Compose
+
+A `docker-compose.yml` is included. Mode defaults to `prod` and can be overridden from the shell:
+
+```bash
+# Production
+docker compose up -d --build
+
+# Dev (UI on)
+MCPRELAY_MODE=dev docker compose up -d --build
+```
+
+### Multi-Arch Builds (amd64 + arm64)
+
+The build stage always compiles on the build host's native architecture and produces a framework-dependent, architecture-neutral publish, so cross-building is fast and needs QEMU only to assemble the foreign-arch runtime layer:
+
+```bash
+docker buildx create --use --name relay-builder   # once
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t ghcr.io/zeromcp/zeromcp.relay:latest \
+  --push .
+```
+
+The `Docker` GitHub Actions workflow builds both platforms on every push to `main` and on `v*` tags, publishing to `ghcr.io/zeromcp/zeromcp.relay` (tags: `latest`, branch name, and semver from the tag).
+
+---
+
 ## Deployment Patterns
 
 ### Local Developer (stdio)
@@ -663,21 +732,15 @@ Duplicate prefixes cause a startup error with a clear message.
 
 ### Team Server (Docker)
 
-```dockerfile
-FROM mcr.microsoft.com/dotnet/runtime:9.0
-RUN dotnet tool install -g ZeroMcp.Relay
-ENV PATH="$PATH:/root/.dotnet/tools"
-COPY relay.config.json /app/relay.config.json
-WORKDIR /app
-EXPOSE 8080
-ENTRYPOINT ["mcprelay", "run", "--host", "0.0.0.0", "--port", "8080"]
-```
+Use the repository's multi-arch image (see [Docker](#docker)):
 
 ```bash
 docker run -p 8080:8080 \
+  -v "$(pwd)/config:/config" \
+  -e MCPRELAY_MODE=prod \
   -e STRIPE_SECRET_KEY=sk_live_... \
   -e CRM_API_KEY=... \
-  myrelay:latest
+  ghcr.io/zeromcp/zeromcp.relay:latest
 ```
 
 ### CI Validation

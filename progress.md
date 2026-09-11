@@ -155,3 +155,15 @@
   - Updated `ConfigMasking` to include `forwardHeaders` in masked config copies.
   - Updated Config UI: added "Passthrough" option in auth type dropdown with descriptive hint, added "Forward Headers" field in advanced options.
   - Validation run: `dotnet build` succeeded (0 warnings, 0 errors). `dotnet test` succeeded (53/53 tests passing).
+
+## 2026-09-11
+
+- Added official **Docker image** support (multi-arch, dev/prod mode):
+  - New `Dockerfile` (multi-stage): build stage on `mcr.microsoft.com/dotnet/sdk:10.0` pinned to `$BUILDPLATFORM` produces a framework-dependent, architecture-neutral publish (`-p:UseAppHost=false`), runtime stage on `mcr.microsoft.com/dotnet/aspnet:10.0`. One compile serves both `linux/amd64` and `linux/arm64`; the final stage contains no `RUN` instructions so foreign-arch layers assemble without QEMU execution.
+  - New `docker/entrypoint.sh`: reads `MCPRELAY_MODE` — `dev`/`development` starts `mcprelay run --enable-ui` (config UI at `/ui`, `ASPNETCORE_ENVIRONMENT=Development`), `prod`/`production` (default, also the fallback for unknown values) starts without the UI. Also honours `MCPRELAY_HOST` (default `0.0.0.0`), `MCPRELAY_PORT` (default `8080`), `MCPRELAY_CONFIG` (default `/config/relay.config.json`), and appends any extra `docker run` arguments to `mcprelay run`.
+  - Container runs as the non-root `app` user (`$APP_UID`), exposes port 8080, and declares a `/config` volume for the relay config (directory mount keeps the UI's atomic temp-file+rename saves working).
+  - New `.dockerignore` excluding build outputs, tests, samples, and VCS metadata from the build context.
+  - New `docker-compose.yml`: single `mcprelay` service, `MCPRELAY_MODE` overridable from the shell (defaults to `prod`), `./config` mounted at `/config`, TCP-based healthcheck against `/health` (base image ships no curl/wget, so it uses the bash `/dev/tcp` builtin).
+  - New `.github/workflows/docker.yml`: buildx + QEMU workflow building `linux/amd64,linux/arm64` on PRs (build-only) and pushing to `ghcr.io/<repo>` on `main` pushes and `v*` tags (`latest`, branch, and semver tags via `docker/metadata-action`).
+  - `.gitignore`: added `/config/` (local compose-mounted config directory).
+  - `README.md`: added a dedicated "Docker" section (quick start, env var table, compose usage, multi-arch build instructions) and updated the "Team Server (Docker)" deployment pattern to use the official image instead of the ad-hoc Dockerfile snippet.
