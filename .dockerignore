@@ -1,0 +1,27 @@
+# Build outputs
+**/bin/
+**/obj/
+**/artifacts/
+
+# IDE / tooling
+.git/
+.github/
+.vs/
+.vscode/
+.idea/
+
+# Local state
+**/.env
+config/
+
+# Docs and tests not needed in the image build context
+tests/
+samples/
+spec.md
+progress.md
+LICENSE
+
+# Docker files themselves (except the entrypoint under docker/)
+Dockerfile
+docker-compose.yml
+.dockerignore

@@ -69,3 +69,7 @@ Desktop.ini
 
 # macOS
 .DS_Store
+
+## Docker
+# Local config directory mounted into the container by docker-compose.yml
+/config/
