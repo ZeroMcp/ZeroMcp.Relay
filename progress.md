@@ -167,3 +167,11 @@
   - New `.github/workflows/docker.yml`: buildx + QEMU workflow building `linux/amd64,linux/arm64` on PRs (build-only) and pushing to `ghcr.io/<repo>` on `main` pushes and `v*` tags (`latest`, branch, and semver tags via `docker/metadata-action`).
   - `.gitignore`: added `/config/` (local compose-mounted config directory).
   - `README.md`: added a dedicated "Docker" section (quick start, env var table, compose usage, multi-arch build instructions) and updated the "Team Server (Docker)" deployment pattern to use the official image instead of the ad-hoc Dockerfile snippet.
+
+## 2026-09-12
+
+- Config UI: added a route to configure a connection from the main page.
+  - The main content empty state ("No API Selected") previously offered no action; the only way to add an API was the `+ Add API` button at the bottom of the sidebar. The empty state now includes a prominent `+ Add API` button that opens the same Add API modal.
+  - Updated both the static empty-state markup and the `clearSelection()` fallback markup in `ZeroMcp.Relay/Ui/index.html` so the button survives re-renders after an API is removed or deselected.
+  - `README.md`: noted that adding an API is available from both the sidebar and the main page's empty state.
+  - Validation run: `dotnet build` succeeded (0 warnings, 0 errors); manual browser test confirmed the button renders in the main area, opens the Add API modal, and the modal closes cleanly.

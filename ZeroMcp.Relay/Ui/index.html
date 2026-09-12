@@ -437,6 +437,7 @@
       <div class="empty-state" id="emptyState">
         <h2>No API Selected</h2>
         <p>Select an API from the sidebar or add a new one to get started.</p>
+        <button class="btn btn-primary" style="margin-top:20px" onclick="openAddModal()">+ Add API</button>
       </div>
     </div>
   </div>
@@ -605,7 +606,7 @@
       renderSidebar();
       document.getElementById('mainContent').innerHTML =
         document.getElementById('emptyState') ? document.getElementById('emptyState').outerHTML :
-        '<div class="empty-state"><h2>No API Selected</h2><p>Select an API from the sidebar or add a new one to get started.</p></div>';
+        '<div class="empty-state"><h2>No API Selected</h2><p>Select an API from the sidebar or add a new one to get started.</p><button class="btn btn-primary" style="margin-top:20px" onclick="openAddModal()">+ Add API</button></div>';
     }
 
     async function renderDetail(api) {
