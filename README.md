@@ -689,15 +689,20 @@ Extra arguments after the image name are appended to `mcprelay run` (e.g. `docke
 
 ### Docker Compose
 
-A `docker-compose.yml` is included. Mode defaults to `prod` and can be overridden from the shell:
+A `docker-compose.yml` is included. It pulls the official image from GHCR (`ghcr.io/zeromcp/zeromcp.relay`). Mode defaults to `prod` and can be overridden from the shell, as can the image tag:
 
 ```bash
-# Production
-docker compose up -d --build
+# Production (pulls ghcr.io/zeromcp/zeromcp.relay:latest)
+docker compose up -d
 
 # Dev (UI on)
-MCPRELAY_MODE=dev docker compose up -d --build
+MCPRELAY_MODE=dev docker compose up -d
+
+# Pin a specific release tag
+MCPRELAY_TAG=v0.1.0 docker compose up -d
 ```
+
+To run a locally built image instead, build and tag it over the GHCR name (`docker build -t ghcr.io/zeromcp/zeromcp.relay:latest .`) or point `MCPRELAY_TAG` at a local tag you pushed.
 
 ### Multi-Arch Builds (amd64 + arm64)
 
