@@ -167,3 +167,10 @@
   - New `.github/workflows/docker.yml`: buildx + QEMU workflow building `linux/amd64,linux/arm64` on PRs (build-only) and pushing to `ghcr.io/<repo>` on `main` pushes and `v*` tags (`latest`, branch, and semver tags via `docker/metadata-action`).
   - `.gitignore`: added `/config/` (local compose-mounted config directory).
   - `README.md`: added a dedicated "Docker" section (quick start, env var table, compose usage, multi-arch build instructions) and updated the "Team Server (Docker)" deployment pattern to use the official image instead of the ad-hoc Dockerfile snippet.
+
+## 2026-09-12
+
+- `docker-compose.yml` now uses the published GHCR image instead of building locally:
+  - Replaced the `build:` section and local `zeromcp/relay:local` tag with `image: ghcr.io/zeromcp/zeromcp.relay:${MCPRELAY_TAG:-latest}`, so `docker compose up` pulls the official multi-arch image published by `.github/workflows/docker.yml`.
+  - New `MCPRELAY_TAG` shell variable pins a specific image tag (e.g. `v0.1.0`); defaults to `latest`.
+  - `README.md` Docker Compose section updated: dropped `--build` from the examples, documented `MCPRELAY_TAG`, and noted how to run a locally built image (tag it over the GHCR name).

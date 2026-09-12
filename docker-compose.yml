@@ -1,9 +1,8 @@
 services:
   mcprelay:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: zeromcp/relay:local
+    # Official multi-arch image published by .github/workflows/docker.yml.
+    # Override the tag from the shell, e.g. MCPRELAY_TAG=v0.1.0 docker compose up -d
+    image: ghcr.io/zeromcp/zeromcp.relay:${MCPRELAY_TAG:-latest}
     container_name: mcprelay
     ports:
       - "${MCPRELAY_PORT:-8080}:8080"
