@@ -174,3 +174,8 @@
   - Replaced the `build:` section and local `zeromcp/relay:local` tag with `image: ghcr.io/zeromcp/zeromcp.relay:${MCPRELAY_TAG:-latest}`, so `docker compose up` pulls the official multi-arch image published by `.github/workflows/docker.yml`.
   - New `MCPRELAY_TAG` shell variable pins a specific image tag (e.g. `v0.1.0`); defaults to `latest`.
   - `README.md` Docker Compose section updated: dropped `--build` from the examples, documented `MCPRELAY_TAG`, and noted how to run a locally built image (tag it over the GHCR name).
+- Config UI: added a route to configure a connection from the main page.
+  - The main content empty state ("No API Selected") previously offered no action; the only way to add an API was the `+ Add API` button at the bottom of the sidebar. The empty state now includes a prominent `+ Add API` button that opens the same Add API modal.
+  - Updated both the static empty-state markup and the `clearSelection()` fallback markup in `ZeroMcp.Relay/Ui/index.html` so the button survives re-renders after an API is removed or deselected.
+  - `README.md`: noted that adding an API is available from both the sidebar and the main page's empty state.
+  - Validation run: `dotnet build` succeeded (0 warnings, 0 errors); manual browser test confirmed the button renders in the main area, opens the Add API modal, and the modal closes cleanly.

@@ -483,7 +483,7 @@ POST /admin/reload           Reload config and specs
 ### Features
 
 **API management:**
-- Add a new API (name, source URL, auth, prefix, timeout, headers, include/exclude)
+- Add a new API (name, source URL, auth, prefix, timeout, headers, include/exclude) — available from the sidebar and directly from the main page's empty state
 - Preview an OpenAPI spec before saving (title, version, operation count, warnings)
 - Edit an existing API's configuration
 - Remove an API with confirmation
