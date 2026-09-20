@@ -12,6 +12,7 @@ public sealed class CliCommandHost(IServiceProvider serviceProvider)
     private readonly OpenApiSourceLoader _loader = serviceProvider.GetRequiredService<OpenApiSourceLoader>();
     private readonly ISecretResolver _secretResolver = serviceProvider.GetRequiredService<ISecretResolver>();
     private readonly RelayRuntime _runtime = serviceProvider.GetRequiredService<RelayRuntime>();
+    private readonly SwaggerScanner _scanner = serviceProvider.GetRequiredService<SwaggerScanner>();
 
     public async Task<int> RunConfigureAsync(string[] args)
     {
@@ -34,6 +35,7 @@ public sealed class CliCommandHost(IServiceProvider serviceProvider)
             "disable" => await ConfigureToggleAsync(options, false),
             "test" => await ConfigureTestAsync(options),
             "set-secret" => await ConfigureSetSecretAsync(options),
+            "scan" => await ConfigureScanAsync(options),
             _ => 1
         };
     }
@@ -349,6 +351,122 @@ public sealed class CliCommandHost(IServiceProvider serviceProvider)
         return 0;
     }
 
+    private async Task<int> ConfigureScanAsync(Dictionary<string, List<string>> options)
+    {
+        var host = GetSingle(options, "--host") ?? "localhost";
+        var portsRaw = GetSingle(options, "--ports");
+        var ports = PortListParser.Parse(portsRaw);
+        var pathsRaw = GetSingle(options, "--paths");
+        var paths = string.IsNullOrWhiteSpace(pathsRaw)
+            ? null
+            : pathsRaw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(p => p.StartsWith('/') ? p : "/" + p)
+                .ToList();
+
+        var scheme = (GetSingle(options, "--scheme") ?? "both").ToLowerInvariant();
+        var schemes = scheme switch
+        {
+            "http" => new List<string> { "http" },
+            "https" => new List<string> { "https" },
+            _ => new List<string> { "http", "https" }
+        };
+
+        var timeoutSeconds = double.TryParse(GetSingle(options, "--timeout"), out var parsedTimeout) && parsedTimeout > 0
+            ? parsedTimeout
+            : 2;
+
+        var scanOptions = new SwaggerScanOptions
+        {
+            Host = host,
+            Ports = ports.Count > 0 ? ports : null,
+            Paths = paths,
+            Schemes = schemes,
+            Timeout = TimeSpan.FromSeconds(timeoutSeconds)
+        };
+
+        var effectivePorts = ports.Count > 0 ? ports : SwaggerScanner.DefaultPorts;
+        Console.Error.WriteLine($"Scanning {host} across {effectivePorts.Count} port(s) for OpenAPI/Swagger docs...");
+
+        var results = await _scanner.ScanAsync(scanOptions);
+        var asJson = options.ContainsKey("--json");
+
+        if (asJson)
+        {
+            Console.WriteLine(JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true }));
+        }
+        else if (results.Count == 0)
+        {
+            Console.WriteLine("No Swagger/OpenAPI documents were found.");
+        }
+        else
+        {
+            Console.WriteLine($"Found {results.Count} spec(s):");
+            Console.WriteLine();
+            Console.WriteLine("NAME                 OPS   TITLE                          URL");
+            foreach (var result in results)
+            {
+                var title = result.Title ?? "(untitled)";
+                if (title.Length > 30)
+                {
+                    title = title[..27] + "...";
+                }
+
+                Console.WriteLine($"{result.SuggestedName,-20} {result.OperationCount,-5} {title,-30} {result.Url}");
+            }
+        }
+
+        if (results.Count == 0)
+        {
+            return 0;
+        }
+
+        if (options.ContainsKey("--add"))
+        {
+            return await AddScanResultsAsync(results, GetSingle(options, "--config"));
+        }
+
+        if (!asJson)
+        {
+            Console.WriteLine();
+            Console.WriteLine("Re-run with --add to add all discovered specs, or add one with:");
+            var first = results[0];
+            Console.WriteLine($"  mcprelay configure add -n {first.SuggestedName} -s {first.Url}");
+        }
+
+        return 0;
+    }
+
+    private async Task<int> AddScanResultsAsync(IReadOnlyList<SwaggerScanResult> results, string? configPath)
+    {
+        var config = await _configService.LoadAsync(configPath);
+        var added = 0;
+        foreach (var result in results)
+        {
+            var name = result.SuggestedName;
+            var suffix = 2;
+            while (config.Apis.Any(api => api.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            {
+                name = $"{result.SuggestedName}_{suffix++}";
+            }
+
+            config.Apis.Add(new ApiConfig
+            {
+                Name = name,
+                Source = result.Url,
+                Prefix = name,
+                Enabled = true,
+                Auth = new AuthConfig { Type = "none" }
+            });
+
+            Console.WriteLine($"Added API '{name}' -> {result.Url}");
+            added++;
+        }
+
+        await _configService.SaveAsync(config, configPath);
+        Console.WriteLine($"Added {added} API(s) to config.");
+        return 0;
+    }
+
     private async Task<int> ToolsListAsync(Dictionary<string, List<string>> options)
     {
         await _runtime.EnsureApisLoadedAsync(validateOnStart: false, failFast: false);
@@ -542,7 +660,7 @@ public sealed class CliCommandHost(IServiceProvider serviceProvider)
 
     private static void PrintConfigureHelp()
     {
-        Console.WriteLine("Usage: mcprelay configure <init|add|remove|list|show|enable|disable|test|set-secret>");
+        Console.WriteLine("Usage: mcprelay configure <init|add|remove|list|show|enable|disable|test|set-secret|scan>");
     }
 
     private static void PrintToolsHelp()
