@@ -188,6 +188,53 @@ mcprelay configure set-secret -n <name> --password <value>
 
 Updates only the auth credential for an existing API.
 
+#### `configure scan`
+
+```
+mcprelay configure scan
+      --host     <string>   Host to scan (default: localhost)
+      --ports    <list>     Comma-separated ports and ranges (e.g. 8080,5000-5010).
+                            Empty scans a built-in common set.
+      --paths    <list>     Comma-separated document paths to probe (overrides the
+                            built-in common set)
+      --scheme   http|https|both  Schemes to probe (default: both)
+      --timeout  <seconds>  Per-request/connect timeout in seconds (default: 2)
+      --add                 Add every discovered spec to the config
+      --json                Output discovered specs as JSON
+      --config   <path>     Config file path
+```
+
+Scans a host for open ports that expose an OpenAPI/Swagger document on well-known URLs
+(e.g. `/swagger/v1/swagger.json`, `/openapi.json`, `/v3/api-docs`, `/swagger.json`) and
+lists what it finds so you can add them. Closed ports are skipped with a fast TCP check,
+and self-signed HTTPS certificates are accepted so local dev servers are discoverable.
+
+```bash
+# Scan localhost across the common port set
+mcprelay configure scan
+
+# Scan specific ports/ranges over HTTP only
+mcprelay configure scan --host localhost --ports 8080,5000-5010 --scheme http
+
+# Discover and add everything found in one step
+mcprelay configure scan --add
+```
+
+```
+Found 2 spec(s):
+
+NAME                 OPS   TITLE                          URL
+petstore             19    Swagger Petstore               http://localhost:8080/openapi.json
+inventory_api        34    Inventory API                  http://localhost:5001/swagger/v1/swagger.json
+
+Re-run with --add to add all discovered specs, or add one with:
+  mcprelay configure add -n petstore -s http://localhost:8080/openapi.json
+```
+
+Without `--add`, each discovered spec gets a suggested name derived from its title; with
+`--add`, name collisions are resolved automatically (e.g. `petstore`, `petstore_2`) and the
+APIs are added with `auth: none` so you can layer on credentials afterwards.
+
 ### `mcprelay run`
 
 ```
@@ -474,6 +521,7 @@ DELETE /ui/apis/{n} Remove an API
 POST /ui/apis/toggle/{n}     Enable/disable
 POST /ui/apis/test/{n}       Test connection
 POST /ui/apis/fetch-spec     Preview a spec URL
+POST /ui/scan                Scan a host for Swagger/OpenAPI docs
 GET  /ui/tools               Tool list (optional ?api= filter)
 GET  /ui/tools/{name}        Tool detail with input schema
 POST /ui/tools/invoke        Invoke a tool
@@ -484,6 +532,7 @@ POST /admin/reload           Reload config and specs
 
 **API management:**
 - Add a new API (name, source URL, auth, prefix, timeout, headers, include/exclude) — available from the sidebar and directly from the main page's empty state
+- Scan a host for Swagger/OpenAPI docs on common ports/URLs and add discovered specs with one click (available from the sidebar and the main page's empty state)
 - Preview an OpenAPI spec before saving (title, version, operation count, warnings)
 - Edit an existing API's configuration
 - Remove an API with confirmation
@@ -509,6 +558,14 @@ POST /admin/reload           Reload config and specs
 4. Select auth type, enter credentials (`env:VAR_NAME` references supported)
 5. Optionally set prefix, timeout, include/exclude patterns
 6. Click **Save** — writes to config file, API appears immediately
+
+### Scan for APIs Flow
+
+1. Click **Scan for APIs**
+2. Enter a host (default `localhost`), optionally narrow the ports/ranges and scheme
+3. Click **Start Scan** — the relay probes open ports for common Swagger/OpenAPI document URLs
+4. Each discovered spec is listed with its title, URL, and operation count (already-configured specs are marked)
+5. Click **Add** on a result — the Add API modal opens pre-filled with the discovered name and URL, and previews the spec so you can set auth and save
 
 ---
 
