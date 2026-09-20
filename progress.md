@@ -179,3 +179,24 @@
   - Updated both the static empty-state markup and the `clearSelection()` fallback markup in `ZeroMcp.Relay/Ui/index.html` so the button survives re-renders after an API is removed or deselected.
   - `README.md`: noted that adding an API is available from both the sidebar and the main page's empty state.
   - Validation run: `dotnet build` succeeded (0 warnings, 0 errors); manual browser test confirmed the button renders in the main area, opens the Add API modal, and the modal closes cleanly.
+
+## 2026-09-20
+
+- Added **host scanning for Swagger/OpenAPI docs** so exposed specs can be discovered and listed for adding:
+  - New `Ingestion/SwaggerScanner.cs`: probes a host across a set of ports (fast TCP open-check first, then HTTP(S) GET) for well-known document URLs (`/swagger/v1/swagger.json`, `/openapi.json`, `/v3/api-docs`, `/swagger.json`, etc.), parses each candidate through the existing OpenAPI loader, and returns discovered specs (title, version, path/operation counts, suggested name). Accepts self-signed HTTPS certs so local dev servers are discoverable; stops at the first valid spec per host:port:scheme.
+  - New `PortListParser` helper: parses comma-separated ports and inclusive ranges (e.g. `8080,5000-5010`) into a sorted, de-duplicated, bounds-checked list.
+  - Refactored `OpenApiSourceLoader`: extracted a public `Parse(content, source)` method (with the existing 3.1→3.0 fallback) from `LoadAsync`, so the scanner can parse content it fetched itself without re-fetching.
+  - Registered `SwaggerScanner` in DI (`Program.cs`) and in the test service provider.
+- New CLI command `mcprelay configure scan`:
+  - Options: `--host` (default `localhost`), `--ports` (list/ranges, empty = common set), `--paths` (override probe paths), `--scheme http|https|both` (default `both`), `--timeout` seconds (default 2), `--add` (add all discovered specs), `--json`.
+  - Prints a table of discovered specs (suggested name, operation count, title, URL) and a ready-to-run `configure add` hint; `--add` writes each spec to the config with `auth: none`, resolving name collisions (`name`, `name_2`, ...).
+  - Updated `configure` usage help to include `scan`.
+- New UI endpoint `POST /ui/scan` (registered only under `--enable-ui`, added to `GetRegisteredRouteTemplates`): accepts `host`/`ports`/`scheme`/`timeout`, runs the scanner, and returns discovered specs marked with `alreadyConfigured` (matched against existing sources).
+- Config UI: added a **Scan for APIs** button (sidebar footer and the main-page empty state, including the `clearSelection()` fallback markup) that opens a scan modal (host/ports/scheme inputs, results list). Each result shows title/URL/operation count with an **Add** button that opens the Add API modal pre-filled with the discovered name and URL and auto-previews the spec.
+- Added `tests/ZeroMcp.Relay.Tests/SwaggerScannerTests.cs`: `PortListParser` list/range and invalid-token parsing, `SuggestName` slug/fallback behavior, and scanner discovery/negative cases against an in-process `HttpListener` stub server (serves a spec, non-spec HTML, and a closed port).
+- Validation run:
+  - `dotnet build "ZeroMcp.Relay.slnx"` succeeded (0 warnings, 0 errors).
+  - `dotnet test "ZeroMcp.Relay.slnx"` succeeded (60/60 tests passing).
+  - CLI smoke test: `configure scan` discovered a served spec on a chosen port; `configure scan --add` wrote a valid config (`configure list`/`validate` confirmed 2 tools, no errors).
+  - UI smoke test: `POST /ui/scan` returned the discovered spec with `alreadyConfigured=false`.
+- Environment note: this VM had no .NET SDK preinstalled; installed .NET 9 and .NET 10 SDKs via `dotnet-install.sh` to `~/.dotnet` to build/test.

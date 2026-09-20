@@ -151,6 +151,7 @@ static ServiceProvider BuildServices()
     services.AddSingleton<ISecretResolver, EnvironmentSecretResolver>();
     services.AddSingleton<RelayConfigService>();
     services.AddSingleton(sp => new OpenApiSourceLoader(new HttpClient()));
+    services.AddSingleton<SwaggerScanner>();
     services.AddSingleton<OpenApiSpecCache>();
     services.AddSingleton<OpenApiToolGenerator>();
     services.AddSingleton<RelayDispatcher>();

@@ -9,6 +9,11 @@ public sealed class OpenApiSourceLoader(HttpClient httpClient)
     public async Task<OpenApiLoadResult> LoadAsync(string source, CancellationToken cancellationToken = default)
     {
         var content = await LoadSourceContentAsync(source, cancellationToken);
+        return Parse(content, source);
+    }
+
+    public OpenApiLoadResult Parse(string content, string source)
+    {
         var reader = new OpenApiStringReader();
         OpenApiDocument? document;
         OpenApiDiagnostic diagnostic;

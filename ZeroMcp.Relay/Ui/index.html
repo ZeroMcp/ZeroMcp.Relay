@@ -431,13 +431,17 @@
       <div class="api-list" id="apiList"></div>
       <div class="sidebar-footer">
         <button class="btn btn-primary btn-full" onclick="openAddModal()">+ Add API</button>
+        <button class="btn btn-full" style="margin-top:8px" onclick="openScanModal()">Scan for APIs</button>
       </div>
     </div>
     <div class="main" id="mainContent">
       <div class="empty-state" id="emptyState">
         <h2>No API Selected</h2>
         <p>Select an API from the sidebar or add a new one to get started.</p>
-        <button class="btn btn-primary" style="margin-top:20px" onclick="openAddModal()">+ Add API</button>
+        <div style="margin-top:20px;display:flex;gap:8px;justify-content:center">
+          <button class="btn btn-primary" onclick="openAddModal()">+ Add API</button>
+          <button class="btn" onclick="openScanModal()">Scan for APIs</button>
+        </div>
       </div>
     </div>
   </div>
@@ -547,6 +551,48 @@
     </div>
   </div>
 
+  <!-- Scan Modal -->
+  <div class="modal-backdrop hidden" id="scanModal">
+    <div class="modal" style="width:640px">
+      <div class="modal-header">
+        <h3>Scan for APIs</h3>
+        <button class="modal-close" onclick="closeScanModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="hint" style="margin-bottom:12px">
+          Probes a host across common ports for OpenAPI/Swagger documents on well-known URLs
+          (e.g. <code>/swagger/v1/swagger.json</code>, <code>/openapi.json</code>, <code>/v3/api-docs</code>).
+        </p>
+        <div class="field-row">
+          <div class="field">
+            <label for="scanHost">Host</label>
+            <input type="text" id="scanHost" value="localhost" placeholder="localhost">
+          </div>
+          <div class="field">
+            <label for="scanScheme">Scheme</label>
+            <select id="scanScheme">
+              <option value="both">HTTP + HTTPS</option>
+              <option value="http">HTTP only</option>
+              <option value="https">HTTPS only</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="scanPorts">Ports</label>
+          <input type="text" id="scanPorts" placeholder="Leave empty for common ports (e.g. 8080,5000-5010)">
+          <div class="hint">Comma-separated ports and ranges. Empty scans a built-in common set.</div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+          <button class="btn btn-primary btn-sm" id="scanBtn" onclick="runScan()">Start Scan</button>
+        </div>
+        <div id="scanResults"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeScanModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast-container" id="toasts"></div>
 
   <script>
@@ -606,7 +652,7 @@
       renderSidebar();
       document.getElementById('mainContent').innerHTML =
         document.getElementById('emptyState') ? document.getElementById('emptyState').outerHTML :
-        '<div class="empty-state"><h2>No API Selected</h2><p>Select an API from the sidebar or add a new one to get started.</p><button class="btn btn-primary" style="margin-top:20px" onclick="openAddModal()">+ Add API</button></div>';
+        '<div class="empty-state"><h2>No API Selected</h2><p>Select an API from the sidebar or add a new one to get started.</p><div style="margin-top:20px;display:flex;gap:8px;justify-content:center"><button class="btn btn-primary" onclick="openAddModal()">+ Add API</button><button class="btn" onclick="openScanModal()">Scan for APIs</button></div></div>';
     }
 
     async function renderDetail(api) {
@@ -1138,6 +1184,74 @@
       } catch (e) {
         toast('Failed: ' + e.message, 'error');
       }
+    }
+
+    // Scan for APIs
+    function openScanModal() {
+      document.getElementById('scanResults').innerHTML = '';
+      document.getElementById('scanModal').classList.remove('hidden');
+    }
+
+    function closeScanModal() {
+      document.getElementById('scanModal').classList.add('hidden');
+    }
+
+    async function runScan() {
+      const host = document.getElementById('scanHost').value.trim() || 'localhost';
+      const ports = document.getElementById('scanPorts').value.trim();
+      const scheme = document.getElementById('scanScheme').value;
+      const btn = document.getElementById('scanBtn');
+      const container = document.getElementById('scanResults');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Scanning...';
+      container.innerHTML = '<div class="hint" style="padding:8px 0">Scanning ' + esc(host) + '...</div>';
+      try {
+        const res = await fetch('/ui/scan', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({host, ports, scheme})
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          container.innerHTML = '<div class="error-text">' + esc(data.error || 'Scan failed') + '</div>';
+          return;
+        }
+        const results = data.results || [];
+        if (results.length === 0) {
+          container.innerHTML = '<div class="hint" style="padding:8px 0">No Swagger/OpenAPI documents found on ' + esc(host) + '.</div>';
+          return;
+        }
+        window._scanResults = results;
+        container.innerHTML = results.map((r, i) => `
+          <div class="spec-preview success" style="margin-bottom:10px">
+            <div class="preview-row"><span class="preview-label">Title</span><span class="preview-value">${esc(r.title || '(untitled)')}</span></div>
+            <div class="preview-row"><span class="preview-label">URL</span><span class="preview-value">${esc(r.url)}</span></div>
+            <div class="preview-row"><span class="preview-label">Operations</span><span class="preview-value">${r.operationCount || 0}</span></div>
+            <div style="margin-top:8px;text-align:right">
+              ${r.alreadyConfigured
+                ? '<span class="hint">Already configured</span>'
+                : `<button class="btn btn-primary btn-sm" data-scan-idx="${i}">Add</button>`}
+            </div>
+          </div>
+        `).join('');
+        container.querySelectorAll('button[data-scan-idx]').forEach(el => {
+          el.addEventListener('click', () => addScanResult(window._scanResults[parseInt(el.dataset.scanIdx)]));
+        });
+      } catch (e) {
+        container.innerHTML = '<div class="error-text">' + esc(e.message) + '</div>';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Start Scan';
+      }
+    }
+
+    function addScanResult(result) {
+      if (!result) return;
+      closeScanModal();
+      openAddModal();
+      document.getElementById('apiName').value = result.suggestedName || '';
+      document.getElementById('apiSource').value = result.url || '';
+      fetchSpec();
     }
 
     function toast(msg, type) {

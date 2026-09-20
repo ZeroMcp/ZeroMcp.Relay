@@ -12,7 +12,8 @@ public sealed class HttpServer(
     RelayRuntime runtime,
     RelayConfigService configService,
     OpenApiSourceLoader specLoader,
-    OpenApiToolGenerator toolGenerator)
+    OpenApiToolGenerator toolGenerator,
+    SwaggerScanner scanner)
 {
     private static readonly Lazy<string> EmbeddedUiHtml = new(() =>
     {
@@ -33,6 +34,7 @@ public sealed class HttpServer(
                 "/ui/apis", "/ui/apis (POST)", "/ui/apis/{name} (PUT)", "/ui/apis/{name} (DELETE)",
                 "/ui/apis/toggle/{name}", "/ui/apis/test/{name}", "/ui/apis/fetch-spec",
                 "/ui/apis/{name}/all-tools", "/ui/apis/{name}/tools/{toolName}/toggle",
+                "/ui/scan",
                 "/ui/tools", "/ui/tools/{name}", "/ui/tools/invoke",
                 "/admin/reload"
             ]);
@@ -212,6 +214,80 @@ public sealed class HttpServer(
                 {
                     return Results.BadRequest(new { error = ex.Message });
                 }
+            });
+
+            app.MapPost("/ui/scan", async (HttpContext context) =>
+            {
+                var host = "localhost";
+                IReadOnlyList<int>? ports = null;
+                var schemes = new List<string> { "http", "https" };
+                var timeout = TimeSpan.FromSeconds(2);
+
+                if (context.Request.ContentLength is > 0)
+                {
+                    using var document = await JsonDocument.ParseAsync(context.Request.Body, cancellationToken: cancellationToken);
+                    var root = document.RootElement;
+
+                    if (root.TryGetProperty("host", out var hostNode) && hostNode.ValueKind == JsonValueKind.String)
+                    {
+                        var candidate = hostNode.GetString();
+                        if (!string.IsNullOrWhiteSpace(candidate))
+                            host = candidate.Trim();
+                    }
+
+                    if (root.TryGetProperty("ports", out var portsNode) && portsNode.ValueKind == JsonValueKind.String)
+                    {
+                        var parsed = PortListParser.Parse(portsNode.GetString());
+                        if (parsed.Count > 0)
+                            ports = parsed;
+                    }
+
+                    if (root.TryGetProperty("scheme", out var schemeNode) && schemeNode.ValueKind == JsonValueKind.String)
+                    {
+                        schemes = schemeNode.GetString()?.ToLowerInvariant() switch
+                        {
+                            "http" => ["http"],
+                            "https" => ["https"],
+                            _ => ["http", "https"]
+                        };
+                    }
+
+                    if (root.TryGetProperty("timeout", out var timeoutNode) && timeoutNode.ValueKind == JsonValueKind.Number)
+                    {
+                        var seconds = timeoutNode.GetDouble();
+                        if (seconds > 0)
+                            timeout = TimeSpan.FromSeconds(seconds);
+                    }
+                }
+
+                var existing = new HashSet<string>(
+                    runtime.Config.Apis.Select(a => a.Source),
+                    StringComparer.OrdinalIgnoreCase);
+
+                var results = await scanner.ScanAsync(new SwaggerScanOptions
+                {
+                    Host = host,
+                    Ports = ports,
+                    Schemes = schemes,
+                    Timeout = timeout
+                }, cancellationToken);
+
+                var discovered = results.Select(r => new
+                {
+                    r.Url,
+                    r.Host,
+                    r.Port,
+                    r.Scheme,
+                    r.Path,
+                    r.Title,
+                    r.Version,
+                    r.PathCount,
+                    r.OperationCount,
+                    suggestedName = r.SuggestedName,
+                    alreadyConfigured = existing.Contains(r.Url)
+                });
+
+                return Results.Json(new { host, results = discovered });
             });
 
             app.MapGet("/ui/apis/{name}/all-tools", async (string name) =>
